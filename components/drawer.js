@@ -107,13 +107,90 @@ function initMobileDrawer() {
             .drawer-sub-link { padding-left: 42px; font-size: 13px; color: #16A34A; }
 
             .mobile-hamburger-btn {
-                background: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 10px; width: 38px; height: 38px;
-                display: inline-flex; align-items: center; justify-content: center; font-size: 20px;
-                color: #1E293B; cursor: pointer; transition: all 0.2s ease; flex-shrink: 0;
+                background: linear-gradient(135deg, #16A34A 0%, #15803D 100%) !important;
+                border: none !important;
+                border-radius: 12px !important;
+                width: 38px !important;
+                height: 38px !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                font-size: 20px !important;
+                color: #FFFFFF !important;
+                cursor: pointer !important;
+                box-shadow: 0 4px 14px rgba(22, 163, 74, 0.35) !important;
+                transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease !important;
+                flex-shrink: 0 !important;
+                margin-right: 10px !important;
             }
             .mobile-hamburger-btn:hover {
-                background: #E2E8F0; color: #15803D;
+                transform: translateY(-1px) scale(1.05) !important;
+                box-shadow: 0 6px 18px rgba(22, 163, 74, 0.5) !important;
+                background: linear-gradient(135deg, #22C55E 0%, #16A34A 100%) !important;
+                color: #FFFFFF !important;
             }
+            .mobile-hamburger-btn:active {
+                transform: scale(0.94) !important;
+            }
+            html, body {
+                overflow-x: clip !important;
+            }
+            /* Sticky Top App Bar */
+            .top-app-bar, header.top-app-bar {
+                position: sticky !important;
+                top: 0px !important;
+                z-index: 1020 !important;
+                background: rgba(255, 255, 255, 0.95) !important;
+                backdrop-filter: blur(14px) !important;
+                -webkit-backdrop-filter: blur(14px) !important;
+                box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05) !important;
+                padding: 10px 14px !important;
+                border-radius: 16px !important;
+                margin-bottom: 20px !important;
+            }
+            [data-theme="dark"] .top-app-bar {
+                background: rgba(15, 23, 42, 0.94) !important;
+                box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25) !important;
+            }
+
+            /* Responsive Top Right Profile Pill & Mobile Header Optimization */
+            @media (max-width: 991.98px) {
+                .page-title-desktop { display: none !important; }
+                .top-app-bar > .d-flex:last-child {
+                    gap: 8px !important;
+                }
+                .header-user-pill {
+                    padding: 4px 6px 4px 10px !important;
+                    gap: 6px !important;
+                    max-width: 155px !important;
+                    flex-shrink: 0 !important;
+                }
+                .header-user-name {
+                    max-width: 75px !important;
+                    white-space: nowrap !important;
+                    overflow: hidden !important;
+                    text-overflow: ellipsis !important;
+                    font-size: 0.78rem !important;
+                }
+                .header-user-points {
+                    font-size: 0.65rem !important;
+                    white-space: nowrap !important;
+                }
+                .notification-wrapper .notification-btn {
+                    padding: 4px !important;
+                    font-size: 18px !important;
+                }
+            }
+            @media (max-width: 420px) {
+                .header-user-pill {
+                    max-width: 135px !important;
+                    padding: 3px 5px 3px 8px !important;
+                }
+                .header-user-name {
+                    max-width: 58px !important;
+                }
+            }
+
             @media (min-width: 992px) {
                 .mobile-hamburger-btn { display: none !important; }
             }
@@ -146,10 +223,12 @@ function initMobileDrawer() {
     const closeBtn = document.getElementById("drawer-close-btn");
 
     function openDrawer() {
+        document.body.classList.add("drawer-open");
         overlay.classList.add("active");
         drawer.classList.add("active");
     }
     function closeDrawer() {
+        document.body.classList.remove("drawer-open");
         overlay.classList.remove("active");
         drawer.classList.remove("active");
     }
@@ -205,26 +284,29 @@ function ensureTranslatorLoaded() {
 }
 
 function attachHamburgerButton(openDrawerFn) {
-    let topBarContainer = document.querySelector(".top-app-bar") || document.querySelector("header") || document.querySelector(".notif-page-header");
+    if (document.querySelector(".mobile-hamburger-btn")) return;
 
-    if (!topBarContainer) {
-        topBarContainer = document.querySelector(".profile-wrapper > div") ||
-                          document.querySelector(".community-container > div") ||
-                          document.querySelector("main > div") ||
-                          document.querySelector("main");
-    }
+    let targetParent = document.querySelector(".top-app-bar .d-flex:first-child") ||
+                       document.querySelector(".top-app-bar") ||
+                       document.querySelector("header .d-flex:first-child") ||
+                       document.querySelector("header") ||
+                       document.querySelector(".notif-page-header") ||
+                       document.querySelector(".profile-wrapper > div") ||
+                       document.querySelector(".community-container > div") ||
+                       document.querySelector("main");
 
-    if (topBarContainer) {
-        if (!topBarContainer.querySelector(".mobile-hamburger-btn")) {
-            const btn = document.createElement("button");
-            btn.type = "button";
-            btn.className = "mobile-hamburger-btn me-2 d-lg-none";
-            btn.innerHTML = `<i class="bi bi-list"></i>`;
-            btn.setAttribute("aria-label", "Open menu");
-            btn.addEventListener("click", openDrawerFn);
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "mobile-hamburger-btn d-lg-none";
+    btn.innerHTML = `<i class="bi bi-list"></i>`;
+    btn.setAttribute("aria-label", "Open menu");
+    btn.setAttribute("title", "Menu");
+    btn.addEventListener("click", openDrawerFn);
 
-            topBarContainer.insertBefore(btn, topBarContainer.firstChild);
-        }
+    if (targetParent) {
+        targetParent.insertBefore(btn, targetParent.firstChild);
+    } else {
+        document.body.appendChild(btn);
     }
 }
 
