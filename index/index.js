@@ -600,50 +600,22 @@ function initDynamicCounters() {
 //  Feature Modal Handlers
 // =====================================================
 function setupFeatureModalHandlers() {
-  const modal = document.getElementById('feature-detail-modal');
-  const closeModalBtn = document.getElementById('close-feature-modal');
-  const modalTitle = document.getElementById('feature-modal-title');
-  const modalIcon = document.getElementById('feature-modal-icon');
-  const modalContent = document.getElementById('feature-modal-content');
-  const modalActionBtn = document.getElementById('feature-modal-action');
-
-  if (!modal) return;
+  const featureRoutes = {
+    "virtual-tree": "profile/my-virtual-tree.html",
+    "leaderboard": "impact/impact.html",
+    "wallet": "profile/profile.html",
+    "certificates": "profile/mycertificates.html",
+    "rewards": "profile/profile.html",
+    "campaigns": "activities/activities.html"
+  };
 
   document.querySelectorAll('.read-more-link').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
       const key = btn.getAttribute('data-feature');
-      const data = featureDataDetails[key];
-      if (!data) return;
-
-      modalIcon.innerText = data.icon;
-      modalTitle.innerText = data.title;
-      modalContent.innerHTML = data.text;
-
-      modalActionBtn.onclick = () => {
-        modal.classList.remove('active');
-        if (!loggedInUserId) {
-          triggerToastAlert("🔒 Log In to access full workspace features.");
-          setTimeout(() => { window.location.href = '../logins/login.html'; }, 1500);
-        } else {
-          window.location.href = `features/${key}.html`;
-        }
-      };
-
-      modal.classList.add('active');
+      if (key && featureRoutes[key]) {
+        window.location.href = featureRoutes[key];
+      }
     });
-  });
-
-  closeModalBtn?.addEventListener('click', () => modal.classList.remove('active'));
-
-  // Close on backdrop click
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) modal.classList.remove('active');
-  });
-
-  // Close on Escape
-  window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && modal.classList.contains('active')) {
-      modal.classList.remove('active');
-    }
   });
 }
