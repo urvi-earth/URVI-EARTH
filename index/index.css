@@ -1,4 +1,4 @@
-﻿/* =====================================================
+/* =====================================================
    URVI â€“ index.css  |  Mobile-First Premium Web App
    ===================================================== */
 
@@ -37,14 +37,14 @@
 
 html {
   scroll-behavior: smooth;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body {
   font-family: 'Poppins', sans-serif;
   background: var(--bg-page);
   color: var(--text-dark);
-  overflow-x: hidden;
+  overflow-x: clip;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
 }
@@ -1806,10 +1806,15 @@ body {
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
-    padding: 12px 14px !important;
-    background: #FFFFFF !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1020 !important;
+    padding: 10px 14px !important;
+    background: rgba(255, 255, 255, 0.94) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
     border-radius: 16px !important;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.04) !important;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.05) !important;
     margin-bottom: 20px !important;
   }
 
