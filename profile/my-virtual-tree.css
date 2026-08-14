@@ -1,0 +1,879 @@
+/* =====================================================
+   URVI – my-virtual-tree.css | Living Realistic Nature Tree Engine
+   ===================================================== */
+
+/* ── Page Layout ── */
+.tree-page-container {
+    margin-left: 270px;
+    padding: 28px 36px 100px;
+    min-height: 100vh;
+    max-width: 1100px;
+}
+
+.tree-page-header {
+    margin-bottom: 24px;
+}
+.tree-page-header h4 {
+    font-weight: 800;
+    color: var(--forest-green, #14532D);
+    font-size: 24px;
+    margin: 0;
+    letter-spacing: -0.5px;
+}
+.tree-page-subtitle {
+    color: #64748B;
+    font-size: 14px;
+    margin-top: 2px;
+}
+
+/* ── Loading State ── */
+.tree-loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 420px;
+    gap: 16px;
+}
+.tree-loading-state .loading-seed {
+    font-size: 48px;
+    animation: pulse-seed 1.8s ease-in-out infinite;
+}
+.tree-loading-state p {
+    font-size: 15px;
+    color: #64748B;
+    font-weight: 500;
+}
+
+@keyframes pulse-seed {
+    0%, 100% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.15); opacity: 1; }
+}
+
+/* ══════════════════════════════════════
+   TREE SCENE — Atmospheric Living Canvas
+   ══════════════════════════════════════ */
+.tree-scene-wrapper {
+    position: relative;
+    width: 100%;
+    border-radius: 28px;
+    overflow: hidden;
+    background: #0B1E13;
+    box-shadow: 0 20px 50px rgba(11, 30, 19, 0.18);
+    margin-bottom: 24px;
+    min-height: 460px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.tree-svg-container {
+    width: 100%;
+    min-height: 460px;
+    position: relative;
+}
+
+/* Photorealistic Canvas Container */
+.realistic-scene-canvas {
+    position: relative;
+    width: 100%;
+    height: 460px;
+    overflow: hidden;
+}
+
+/* Dual-Surface Stage Layers for Fluid Continuous Growth */
+.tree-surface-layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    opacity: 0;
+    transform: scale(0.96) translateY(12px);
+    transform-origin: center bottom;
+    transition: opacity 1.1s cubic-bezier(0.4, 0, 0.2, 1), transform 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.tree-surface-layer.visible {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    z-index: 2;
+}
+
+.tree-surface-layer.morphing-grow {
+    transform: scale(1) translateY(0);
+}
+
+.tree-surface-layer.fading-out {
+    opacity: 0;
+    transform: scale(1.02) translateY(-4px);
+    z-index: 1;
+}
+
+.tree-surface-layer.settled-idle .tree-nature-img {
+    animation: realistic-tree-breeze 12s ease-in-out infinite alternate;
+}
+
+.tree-nature-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center bottom;
+    transform-origin: center bottom;
+    display: block;
+}
+
+/* Organic Breathing Breeze */
+@keyframes realistic-tree-breeze {
+    0% {
+        transform: scale(1) rotate(0deg);
+    }
+    50% {
+        transform: scale(1.02) rotate(0.35deg);
+    }
+    100% {
+        transform: scale(1.01) rotate(-0.35deg);
+    }
+}
+
+/* Atmospheric Sun & Light Layers */
+.tree-atmospheric-vignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 40%, transparent 50%, rgba(11, 30, 19, 0.35) 100%);
+    pointer-events: none;
+    z-index: 3;
+}
+
+.tree-sunlight-bloom {
+    position: absolute;
+    top: -20px;
+    right: 15%;
+    width: 320px;
+    height: 320px;
+    background: radial-gradient(circle, rgba(254, 240, 138, 0.25) 0%, rgba(254, 240, 138, 0.05) 55%, transparent 70%);
+    pointer-events: none;
+    animation: sunlight-glow 8s ease-in-out infinite alternate;
+    z-index: 3;
+}
+
+/* Continuous Botanical Spores Canvas */
+.growth-spores-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 4;
+}
+
+@keyframes sunlight-glow {
+    0% { opacity: 0.6; transform: scale(0.95); }
+    100% { opacity: 1; transform: scale(1.1); }
+}
+
+/* ── Live Moving Atmospheric Overlay ── */
+.tree-living-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+    overflow: hidden;
+}
+
+/* Volumetric Sunbeams */
+.living-sunbeam {
+    position: absolute;
+    top: -50px;
+    width: 180px;
+    height: 600px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(254, 240, 138, 0.12) 40%, transparent 80%);
+    transform: rotate(28deg);
+    filter: blur(14px);
+    opacity: 0.6;
+    animation: sunbeam-drift 10s ease-in-out infinite alternate;
+}
+.sunbeam-1 { right: 22%; }
+.sunbeam-2 { right: 40%; animation-delay: 3s; animation-duration: 14s; width: 140px; }
+
+@keyframes sunbeam-drift {
+    0% { opacity: 0.4; transform: rotate(26deg) translateX(-10px); }
+    100% { opacity: 0.75; transform: rotate(30deg) translateX(15px); }
+}
+
+/* Ambient Floating Motes (Fireflies / Pollen) */
+.living-motes-layer {
+    position: absolute;
+    inset: 0;
+}
+.mote {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #FEF08A;
+    box-shadow: 0 0 10px #FDE047, 0 0 4px #FFFFFF;
+    opacity: 0;
+    animation: live-mote-drift 8s ease-in-out infinite;
+}
+.mote-1 { left: 20%; top: 60%; animation-delay: 0s; animation-duration: 7s; }
+.mote-2 { left: 45%; top: 40%; animation-delay: 1.5s; animation-duration: 9s; width: 5px; height: 5px; }
+.mote-3 { left: 65%; top: 55%; animation-delay: 3s; animation-duration: 8.5s; }
+.mote-4 { left: 35%; top: 70%; animation-delay: 4.5s; animation-duration: 10s; }
+.mote-5 { left: 80%; top: 45%; animation-delay: 2s; animation-duration: 11s; }
+.mote-6 { left: 55%; top: 65%; animation-delay: 5.5s; animation-duration: 7.5s; width: 3px; height: 3px; }
+.mote-7 { left: 15%; top: 45%; animation-delay: 6s; animation-duration: 9.5s; }
+.mote-8 { left: 70%; top: 30%; animation-delay: 3.5s; animation-duration: 8s; }
+
+@keyframes live-mote-drift {
+    0% { transform: translateY(0) scale(0.6); opacity: 0; }
+    30% { opacity: 0.9; }
+    80% { opacity: 0.7; }
+    100% { transform: translateY(-70px) translateX(25px) scale(1.2); opacity: 0; }
+}
+
+/* Floating Flower Petals */
+.living-petals-layer {
+    position: absolute;
+    inset: 0;
+}
+.petal {
+    position: absolute;
+    width: 9px;
+    height: 6px;
+    background: #FCE7F3;
+    border-radius: 50% 50% 50% 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    opacity: 0;
+    animation: live-petal-fall 10s linear infinite;
+}
+.petal-1 { left: 30%; top: 20%; animation-delay: 0s; animation-duration: 9s; }
+.petal-2 { left: 50%; top: 15%; animation-delay: 2.5s; animation-duration: 11s; }
+.petal-3 { left: 68%; top: 25%; animation-delay: 5s; animation-duration: 10s; }
+.petal-4 { left: 40%; top: 10%; animation-delay: 7s; animation-duration: 12s; }
+
+@keyframes live-petal-fall {
+    0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+    20% { opacity: 0.9; }
+    80% { opacity: 0.9; }
+    100% { transform: translate(90px, 260px) rotate(360deg); opacity: 0; }
+}
+
+/* Fluttering Living Butterflies */
+.living-butterflies-layer {
+    position: absolute;
+    inset: 0;
+}
+.live-butterfly {
+    position: absolute;
+    width: 22px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: butterfly-natural-flight 14s ease-in-out infinite;
+}
+.butterfly-1 { left: 25%; top: 45%; }
+.butterfly-2 { left: 65%; top: 55%; animation-delay: 5s; animation-duration: 16s; }
+
+.b-wing {
+    width: 10px;
+    height: 14px;
+    background: linear-gradient(135deg, #F472B6, #FBBF24);
+    border-radius: 50% 50% 30% 30%;
+    animation: wing-rapid-flap 0.28s ease-in-out infinite alternate;
+}
+.b-wing.left { transform-origin: right center; }
+.b-wing.right { transform-origin: left center; }
+
+@keyframes wing-rapid-flap {
+    0% { transform: scaleX(1); }
+    100% { transform: scaleX(0.15); }
+}
+
+@keyframes butterfly-natural-flight {
+    0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+    10% { opacity: 1; }
+    30% { transform: translate(45px, -35px) rotate(12deg); }
+    60% { transform: translate(90px, -10px) rotate(-10deg); }
+    85% { opacity: 1; }
+    100% { transform: translate(140px, -50px) rotate(8deg); opacity: 0; }
+}
+
+/* Soaring Sky Bird */
+.living-bird-layer {
+    position: absolute;
+    top: 18%;
+    width: 100%;
+}
+.live-sky-bird {
+    width: 24px;
+    height: 8px;
+    position: absolute;
+    left: -40px;
+    background: transparent;
+    border-top: 2px solid rgba(15, 23, 42, 0.65);
+    border-radius: 50% 50% 0 0;
+    animation: bird-sky-soar 22s linear infinite;
+}
+.live-sky-bird::after {
+    content: '';
+    position: absolute;
+    left: 12px;
+    top: -2px;
+    width: 12px;
+    height: 8px;
+    border-top: 2px solid rgba(15, 23, 42, 0.65);
+    border-radius: 50% 50% 0 0;
+}
+
+@keyframes bird-sky-soar {
+    0% { transform: translateX(0); opacity: 0; }
+    10% { opacity: 0.8; }
+    90% { opacity: 0.8; }
+    100% { transform: translateX(750px); opacity: 0; }
+}
+
+/* ── Header XP Chip ── */
+.tree-total-xp-chip {
+    background: #FFFFFF;
+    border: 1.5px solid #BBF7D0;
+    box-shadow: 0 4px 14px rgba(22, 101, 52, 0.08);
+    border-radius: 50px;
+    padding: 7px 18px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13.5px;
+    color: #14532D;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.tree-total-xp-chip:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(22, 101, 52, 0.12);
+}
+.tree-total-xp-chip .xp-chip-star {
+    font-size: 16px;
+    line-height: 1;
+}
+.tree-total-xp-chip .xp-chip-val {
+    font-weight: 800;
+    font-size: 16px;
+    color: #16A34A;
+}
+.tree-total-xp-chip .xp-chip-unit {
+    font-weight: 600;
+    color: #64748B;
+    font-size: 12.5px;
+}
+
+/* ── Level Label Floating Pill ── */
+.tree-level-label {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    text-align: center;
+    pointer-events: none;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(12px);
+    padding: 8px 24px;
+    border-radius: 50px;
+    border: 1px solid rgba(22, 101, 52, 0.2);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+}
+.tree-level-label .level-num {
+    font-size: 11px;
+    font-weight: 800;
+    color: #166534;
+    text-transform: uppercase;
+    letter-spacing: 1.8px;
+    line-height: 1.2;
+}
+.scene-xp-pill {
+    background: rgba(34, 197, 94, 0.15);
+    color: #15803D;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    border-radius: 50px;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 1px 8px;
+}
+.tree-level-label .level-name {
+    font-size: 18px;
+    font-weight: 800;
+    color: #14532D;
+    line-height: 1.2;
+    display: block;
+}
+
+/* ── XP Progress Section ── */
+.xp-progress-section {
+    background: #FFFFFF;
+    border-radius: 20px;
+    padding: 22px 28px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    margin-bottom: 24px;
+    border: 1px solid #E2E8F0;
+}
+.xp-progress-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.xp-label-main {
+    font-size: 15px;
+    font-weight: 600;
+    color: #14532D;
+}
+.xp-label-main span {
+    font-weight: 800;
+    font-size: 19px;
+    color: #16A34A;
+}
+.xp-label-remaining {
+    font-size: 13px;
+    color: #64748B;
+    font-weight: 600;
+}
+
+.xp-bar-track {
+    width: 100%;
+    height: 14px;
+    background: #E2E8F0;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+}
+.xp-bar-fill {
+    height: 100%;
+    border-radius: 10px;
+    background: linear-gradient(90deg, #22C55E, #16A34A, #15803D);
+    transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    min-width: 4px;
+}
+
+/* ── Level Info Card ── */
+.level-info-card {
+    background: #FFFFFF;
+    border-radius: 20px;
+    padding: 22px 28px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    margin-bottom: 24px;
+    border: 1px solid #E2E8F0;
+    display: flex;
+    align-items: flex-start;
+    gap: 18px;
+}
+.level-info-icon {
+    font-size: 40px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+.level-info-content h5 {
+    font-weight: 800;
+    font-size: 15px;
+    color: #166534;
+    margin: 0 0 2px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.level-info-content .level-stage-name {
+    font-weight: 800;
+    font-size: 20px;
+    color: #14532D;
+    margin-bottom: 6px;
+}
+.level-info-content p {
+    font-size: 14px;
+    color: #475569;
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* ── Tree Journey Timeline ── */
+.tree-journey-section {
+    background: #FFFFFF;
+    border-radius: 20px;
+    padding: 24px 28px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    margin-bottom: 24px;
+    border: 1px solid #E2E8F0;
+}
+.tree-journey-section h5 {
+    font-weight: 800;
+    font-size: 17px;
+    color: #14532D;
+    margin-bottom: 20px;
+}
+.journey-timeline {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    position: relative;
+}
+.journey-timeline::before {
+    content: '';
+    position: absolute;
+    left: 17px;
+    top: 15px;
+    bottom: 15px;
+    width: 2px;
+    background: #E2E8F0;
+}
+.journey-step {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+    position: relative;
+}
+.journey-step:last-child {
+    margin-bottom: 0;
+}
+.journey-node {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 13px;
+    z-index: 2;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+.journey-node.completed {
+    background: #16A34A;
+    color: #FFFFFF;
+    box-shadow: 0 2px 8px rgba(22, 163, 74, 0.35);
+}
+.journey-node.current {
+    background: #22C55E;
+    color: #FFFFFF;
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.25);
+    animation: pulse-node 2s infinite;
+}
+.journey-node.locked {
+    background: #F1F5F9;
+    color: #94A3B8;
+    border: 2px solid #CBD5E1;
+}
+
+@keyframes pulse-node {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+}
+
+.journey-info {
+    flex-grow: 1;
+}
+.journey-title {
+    font-weight: 700;
+    font-size: 14.5px;
+    color: #1E293B;
+}
+.journey-title.locked-title {
+    color: #64748B;
+    font-weight: 500;
+}
+.journey-xp-tag {
+    font-size: 12px;
+    color: #16A34A;
+    font-weight: 600;
+}
+.journey-xp-tag.remaining {
+    color: #94A3B8;
+    font-weight: 500;
+}
+
+/* ── Eco Stats Section ── */
+.eco-stats-section {
+    background: #FFFFFF;
+    border-radius: 20px;
+    padding: 24px 28px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    margin-bottom: 24px;
+    border: 1px solid #E2E8F0;
+}
+.eco-stats-section h5 {
+    font-weight: 800;
+    font-size: 17px;
+    color: #14532D;
+    margin-bottom: 18px;
+}
+.eco-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
+}
+.eco-stat-card {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    padding: 16px 12px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: transform 0.2s ease;
+}
+.eco-stat-card:hover {
+    transform: translateY(-2px);
+    background: #F0FDF4;
+    border-color: #BBF7D0;
+}
+.eco-stat-card .stat-icon {
+    font-size: 22px;
+    line-height: 1;
+}
+.eco-stat-card .stat-value {
+    font-size: 20px;
+    font-weight: 800;
+    color: #14532D;
+}
+.eco-stat-card .stat-label {
+    font-size: 11.5px;
+    color: #64748B;
+    font-weight: 600;
+}
+
+/* ── Growth History Section ── */
+.tree-history-section {
+    background: #FFFFFF;
+    border-radius: 20px;
+    padding: 24px 28px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    border: 1px solid #E2E8F0;
+}
+.tree-history-section h5 {
+    font-weight: 800;
+    font-size: 17px;
+    color: #14532D;
+    margin-bottom: 16px;
+}
+.history-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.history-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid #F1F5F9;
+    font-size: 13.5px;
+}
+.history-item:last-child {
+    border-bottom: none;
+}
+.history-xp-badge {
+    background: #DCFCE7;
+    color: #166534;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 50px;
+    font-size: 12px;
+}
+.history-desc {
+    font-weight: 500;
+    color: #334155;
+    flex-grow: 1;
+    margin: 0 16px;
+}
+.history-date {
+    color: #94A3B8;
+    font-size: 12px;
+}
+.history-empty {
+    color: #94A3B8;
+    font-size: 14px;
+    padding: 16px 0;
+    text-align: center;
+}
+.history-view-all {
+    background: none;
+    border: none;
+    color: #16A34A;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 8px 0 0;
+    cursor: pointer;
+    display: block;
+    width: 100%;
+    text-align: center;
+}
+.history-view-all:hover {
+    text-decoration: underline;
+}
+
+/* ══════════════════════════════════════
+   LEVEL-UP CELEBRATION MODAL
+   ══════════════════════════════════════ */
+.levelup-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.88);
+    backdrop-filter: blur(12px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+}
+.levelup-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+.levelup-content {
+    text-align: center;
+    max-width: 480px;
+    padding: 32px;
+}
+.levelup-tree-wrap {
+    width: 280px;
+    height: 180px;
+    margin: 0 auto 16px;
+}
+.levelup-text {
+    font-size: 15px;
+    color: #A7F3D0;
+    font-weight: 500;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+.levelup-text.visible { opacity: 1; }
+.levelup-title {
+    font-size: 32px;
+    font-weight: 800;
+    color: #FFFFFF;
+    opacity: 0;
+    transform: scale(0.9);
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.levelup-title.visible { opacity: 1; transform: scale(1); }
+.levelup-stage {
+    font-size: 18px;
+    font-weight: 600;
+    color: #4ADE80;
+    margin-top: 4px;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+.levelup-stage.visible { opacity: 1; }
+.levelup-dismiss {
+    margin-top: 24px;
+    background: #22C55E;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 50px;
+    padding: 10px 32px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.2s ease;
+}
+.levelup-dismiss.visible { opacity: 1; }
+.levelup-dismiss:hover { transform: scale(1.05); }
+
+/* ── Public View Banner ── */
+.public-view-banner {
+    background: linear-gradient(135deg, #F0FDF4, #ECFDF5);
+    border: 1px solid #BBF7D0;
+    border-radius: 16px;
+    padding: 14px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+.public-view-banner .public-avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #22C55E;
+}
+.public-view-banner .public-name {
+    font-weight: 700;
+    font-size: 15px;
+    color: #14532D;
+}
+.public-view-banner .public-handle {
+    font-size: 13px;
+    color: #64748B;
+}
+
+/* ══════════════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════════════ */
+@media (max-width: 992px) {
+    .tree-page-container {
+        margin-left: 0;
+        padding: 20px 16px 100px;
+    }
+}
+
+@media (max-width: 768px) {
+    .eco-stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    .tree-scene-wrapper,
+    .realistic-scene-canvas {
+        min-height: 360px;
+        height: 360px;
+        border-radius: 20px;
+    }
+    .tree-svg-container {
+        min-height: 360px;
+    }
+    .xp-progress-section,
+    .level-info-card,
+    .tree-journey-section,
+    .tree-history-section {
+        padding: 18px 20px;
+        border-radius: 16px;
+    }
+    .level-info-card {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .eco-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .eco-stat-card .stat-value {
+        font-size: 18px;
+    }
+    .tree-scene-wrapper,
+    .realistic-scene-canvas {
+        min-height: 320px;
+        height: 320px;
+    }
+    .tree-svg-container {
+        min-height: 320px;
+    }
+    .tree-level-label .level-name {
+        font-size: 15px;
+    }
+    .xp-progress-top {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+}

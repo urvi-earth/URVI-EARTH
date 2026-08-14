@@ -1,0 +1,401 @@
+/* =====================================================
+   URVI – mycertificates.css | Official Botanical Eco Certificate
+   ===================================================== */
+:root {
+    --cert-forest: #0D3B24;
+    --cert-forest-light: #166534;
+    --cert-gold: #C6A15B;
+    --cert-gold-dark: #A8833E;
+    --cert-gold-light: #F3E3B6;
+    --cert-ivory: #FAF8F2;
+    --cert-border-inner: #D8C39D;
+    --cert-text-dark: #1A2E22;
+    --cert-text-muted: #52665A;
+}
+
+body {
+    background-color: #F8FAFC;
+    font-family: 'Poppins', sans-serif;
+    color: #1E293B;
+}
+
+.certificates-container {
+    margin-left: 270px;
+    padding: 32px 40px;
+    min-height: 100vh;
+}
+
+/* ── Certificate Summary Card in Grid ── */
+.cert-card-item {
+    background: #FFFFFF;
+    border-radius: 20px;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+    padding: 24px;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+.cert-card-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+}
+
+.cert-mini-preview-wrap {
+    background: var(--cert-ivory);
+    border: 3px solid var(--cert-forest);
+    outline: 1px solid var(--cert-gold);
+    outline-offset: -5px;
+    border-radius: 10px;
+    padding: 18px 14px;
+    text-align: center;
+    position: relative;
+    cursor: pointer;
+    box-shadow: inset 0 0 25px rgba(22, 74, 50, 0.04);
+    overflow: hidden;
+}
+
+/* Badge tags for certificate type */
+.cert-type-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 50px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+.cert-type-badge.badge-participation {
+    background: #DCFCE7;
+    color: #164A32;
+    border: 1px solid #86EFAC;
+}
+.cert-type-badge.badge-appreciation {
+    background: #FEF3C7;
+    color: #78350F;
+    border: 1px solid #FDE68A;
+}
+.cert-type-badge.badge-completion {
+    background: #E0E7FF;
+    color: #1E1B4B;
+    border: 1px solid #A5B4FC;
+}
+.cert-type-badge.badge-excellence {
+    background: #FAE8FF;
+    color: #701A75;
+    border: 1px solid #F0ABFC;
+}
+
+/* Action buttons on card */
+.cert-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+}
+.btn-cert-action {
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 12px;
+    padding: 7px 16px;
+    transition: all 0.2s ease;
+}
+
+/* =====================================================
+   FORMAL LANDSCAPE CERTIFICATE CANVAS / TEMPLATE
+   ===================================================== */
+.urvi-certificate-canvas {
+    width: 1000px;
+    min-width: 1000px;
+    height: 707px; /* Proportional 1.414 A4 Landscape ratio */
+    min-height: 707px;
+    background-color: var(--cert-ivory);
+    background-image: 
+        radial-gradient(ellipse at center, rgba(255, 255, 255, 0.9) 0%, rgba(248, 245, 236, 0.95) 70%, rgba(238, 232, 218, 0.9) 100%),
+        radial-gradient(#166534 0.45px, transparent 0.45px);
+    background-size: 100% 100%, 20px 20px;
+    background-position: 0 0, 10px 10px;
+    box-sizing: border-box;
+    position: relative;
+    margin: 0 auto;
+    padding: 34px 44px;
+    color: var(--cert-text-dark);
+    font-family: 'Poppins', sans-serif;
+    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.18);
+    overflow: hidden;
+    user-select: text;
+}
+
+/* Master Multi-Layer Luxury Vector Frame */
+.cert-luxury-frame-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1000px;
+    height: 707px;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Content Layout Container */
+.cert-content-inner {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    text-align: center;
+}
+
+/* Header Branding */
+.cert-brand-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    margin-top: 2px;
+}
+.cert-brand-logo {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+.cert-brand-title {
+    font-family: 'Cinzel', serif;
+    font-weight: 900;
+    font-size: 24px;
+    color: var(--cert-forest);
+    letter-spacing: 5px;
+    line-height: 1;
+    margin: 3px 0 0 0;
+}
+.cert-brand-sub {
+    font-family: 'Cinzel', serif;
+    font-size: 9.5px;
+    font-weight: 700;
+    color: var(--cert-gold);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+}
+.cert-brand-tagline {
+    font-size: 8px;
+    letter-spacing: 3px;
+    color: var(--cert-text-dark);
+    text-transform: uppercase;
+    font-weight: 600;
+    opacity: 0.75;
+}
+
+/* Award Title Headline */
+.cert-title-section {
+    margin: 6px 0 2px;
+}
+.cert-type-headline {
+    font-family: 'Cinzel', serif;
+    font-weight: 800;
+    font-size: 25px;
+    color: var(--cert-forest);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin: 0;
+    line-height: 1.2;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+.cert-presentation-text {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--cert-text-muted);
+    margin-top: 5px;
+    font-weight: 700;
+}
+
+/* Recipient Section */
+.cert-recipient-section {
+    margin: 4px 0;
+}
+.cert-recipient-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 700;
+    font-style: italic;
+    font-size: 40px;
+    color: var(--cert-forest);
+    line-height: 1.1;
+    margin: 0;
+    display: inline-block;
+    letter-spacing: 1.5px;
+}
+.cert-username-handle {
+    display: block;
+    font-family: 'Poppins', sans-serif;
+    font-size: 12px;
+    color: var(--cert-text-muted);
+    font-weight: 600;
+    margin-top: 1px;
+}
+.cert-recipient-divider {
+    width: 240px;
+    height: 1.5px;
+    background: linear-gradient(90deg, transparent, var(--cert-gold), transparent);
+    margin: 5px auto 0;
+}
+
+/* Dynamic Achievement Description */
+.cert-description-box {
+    max-width: 740px;
+    margin: 0 auto;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--cert-text-dark);
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Event Info Row */
+.cert-event-meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    font-size: 11.5px;
+    margin: 3px 0;
+    color: var(--cert-text-dark);
+}
+.cert-meta-item strong {
+    color: var(--cert-forest);
+    font-weight: 700;
+}
+
+/* Signatures & Seal Section */
+.cert-bottom-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-top: 6px;
+    padding: 0 40px;
+}
+.cert-sig-block {
+    width: 210px;
+    text-align: center;
+}
+.cert-sig-img-wrap {
+    height: 48px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    margin-bottom: -2px;
+}
+.cert-sig-img {
+    max-height: 46px;
+    max-width: 180px;
+    object-fit: contain;
+}
+.cert-sig-line {
+    width: 100%;
+    border-top: 1.5px solid var(--cert-gold);
+    margin: 2px 0 4px;
+}
+.cert-sig-name {
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    font-size: 12px;
+    color: var(--cert-forest);
+    line-height: 1.2;
+}
+.cert-sig-title {
+    font-size: 10px;
+    color: var(--cert-text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Center URVI Emblem */
+.cert-seal-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 10px;
+    margin-bottom: -2px;
+}
+.cert-emblem-badge {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #FFFFFF 60%, #F9F7EF 100%);
+    border: 2px solid var(--cert-gold);
+    box-shadow: 0 4px 12px rgba(13, 59, 36, 0.12), inset 0 0 6px rgba(198, 161, 91, 0.3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+}
+.cert-emblem-logo {
+    width: 38px;
+    height: 38px;
+    object-fit: contain;
+}
+.cert-emblem-text {
+    font-family: 'Cinzel', serif;
+    font-size: 6px;
+    font-weight: 800;
+    color: var(--cert-forest);
+    letter-spacing: 0.8px;
+    margin-top: 1px;
+    line-height: 1;
+}
+
+/* Footer Tracking Metadata */
+.cert-footer-meta, .cert-verification-footer {
+    font-size: 10.5px;
+    color: var(--cert-text-muted);
+    border-top: 1px solid var(--cert-border-inner);
+    padding-top: 6px;
+    margin-bottom: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+}
+.cert-footer-meta strong, .cert-verification-footer strong, .cert-id-tag strong {
+    color: var(--cert-forest);
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 11.5px;
+    font-weight: 700;
+}
+.cert-verify-url span {
+    color: var(--cert-forest);
+    font-weight: 600;
+}
+
+/* Modal body scrolls horizontally on smaller viewports */
+#certPreviewModalBody {
+    overflow-x: auto;
+}
+
+@media (max-width: 992px) {
+    .certificates-container {
+        margin-left: 0;
+        padding: 20px 16px;
+        padding-bottom: 90px;
+    }
+}
+
+@media print {
+    .desktop-sidebar, .top-app-bar, .drawer-overlay, .mobile-drawer-aside, .vine-decoration, header, .modal-header, .cert-card-actions {
+        display: none !important;
+    }
+    .certificates-container {
+        margin-left: 0;
+        padding: 0;
+    }
+    .urvi-certificate-canvas {
+        box-shadow: none !important;
+        page-break-inside: avoid;
+    }
+}

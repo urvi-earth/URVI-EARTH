@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URVI - Sign Up</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="logins.css">
+</head>
+<body>
+    <div class="page-container">
+        <!-- Left Panel: Brand presentation (Desktop Only) -->
+        <div class="brand-panel">
+            <div class="brand-content">
+                <span class="badge">Join URVI</span>
+                <h1>Create Your Green Legacy</h1>
+                <p>Register today to start tracking your plant growth, earning eco-points, and connecting with a global community committed to cooling the Earth.</p>
+                <div class="leaf-decorative">🌱</div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Multi-Step Sign Up Form -->
+        <div class="form-panel">
+            <div class="login-card signup-card">
+                <div class="logo-wrapper">
+                    <div class="logo-placeholder">
+                        <img id="logo-img" src="../assets/logo.png" alt="Urvi Logo" style="width: 70px; height: 70px; max-width: 70px; max-height: 70px; object-fit: contain;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
+                        <span class="logo-fallback" style="display:none;">🌿 URVI</span>
+                    </div>
+                </div>
+
+                <!-- Step Progress Bar -->
+                <div class="step-progress">
+                    <div class="progress-bar-fill" id="progress-bar-fill"></div>
+                    <div class="step-dot active" data-step="1">1</div>
+                    <div class="step-dot" data-step="2">2</div>
+                    <div class="step-dot" data-step="3">3</div>
+                </div>
+
+                <h2 class="form-title" id="step-title">Personal Details</h2>
+                <p class="form-subtitle" id="step-subtitle">Step 1 of 3: Tell us about yourself</p>
+
+                <!-- Feedback Banner for warnings and messages -->
+                <div id="signup-feedback" class="feedback-msg hidden"></div>
+
+                <form id="signup-form">
+                    
+                    <!-- STEP 1: Personal Info -->
+                    <div class="form-step active" id="step-1">
+                        <div class="input-group">
+                            <input type="text" id="first-name" required placeholder=" ">
+                            <label for="first-name">First Name</label>
+                        </div>
+                        <div class="input-group">
+                            <input type="text" id="last-name" required placeholder=" ">
+                            <label for="last-name">Last Name</label>
+                        </div>
+                        <div class="input-group">
+                            <input type="email" id="email" required placeholder=" ">
+                            <label for="email">Email Address</label>
+                        </div>
+                        <div class="input-group">
+                            <input type="tel" id="mobile" pattern="[0-9]{10}" maxlength="10" required placeholder=" ">
+                            <label for="mobile">Mobile Number (10 digits)</label>
+                        </div>
+                        <button type="button" class="btn btn-primary next-step-btn" id="btn-step1-next">Next Step</button>
+                    </div>
+
+                    <!-- STEP 2: Credentials & ID Selection -->
+                    <div class="form-step hidden" id="step-2">
+                        <div class="input-group">
+                            <input type="text" id="username" required placeholder=" ">
+                            <label for="username">Choose a Unique User ID</label>
+                        </div>
+                        <div class="input-group">
+                            <input type="password" id="password" required placeholder=" ">
+                            <label for="password">Create Password</label>
+                        </div>
+                        <div class="input-group">
+                            <input type="password" id="confirm-password" required placeholder=" ">
+                            <label for="confirm-password">Confirm Password</label>
+                        </div>
+                        
+                        <div class="button-group">
+                            <button type="button" class="btn btn-secondary prev-step-btn" data-prev="1">Back</button>
+                            <button type="button" class="btn btn-primary next-step-btn" id="btn-step2-next">Next Step</button>
+                        </div>
+                    </div>
+
+                    <!-- STEP 3: Profile Setup -->
+                    <div class="form-step hidden" id="step-3">
+                        
+                        <!-- Circular Avatar Upload Preview -->
+                        <div class="avatar-upload-container">
+                            <div class="avatar-preview" id="avatar-click-zone" title="Click to upload profile photo">
+                                <img id="avatar-img" src="" alt="Profile Preview" class="hidden">
+                                <div class="avatar-svg-placeholder">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                                    </svg>
+                                </div>
+                                <div class="avatar-overlay-hint">Upload</div>
+                            </div>
+                            <input type="file" id="profile-pic" accept="image/*" class="hidden">
+                        </div>
+
+                        <div class="input-group">
+                            <input type="date" id="dob" required placeholder=" ">
+                            <label for="dob">Date of Birth</label>
+                        </div>
+
+                        <div class="input-group textarea-group">
+                            <textarea id="bio" rows="3" required placeholder=" " maxlength="150"></textarea>
+                            <label for="bio">Tell us about yourself (Bio)</label>
+                        </div>
+
+                        <div class="button-group">
+                            <button type="button" class="btn btn-secondary prev-step-btn" data-prev="2">Back</button>
+                            <button type="submit" class="btn btn-primary" id="btn-signup-submit">Complete Sign Up</button>
+                        </div>
+                    </div>
+
+                </form>
+
+                <div class="form-footer">
+                    <p>Already have an account? <a href="login.html" class="accent-link">Log In</a></p>
+                    <p class="support-footer"><a href="#" id="support-trigger" class="support-link">Can't Sign Up?</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Verification Pending Interface Modal -->
+    <div class="modal-overlay" id="verification-pending-modal">
+        <div class="modal-card" style="text-align:center; max-width:440px;">
+            <div style="font-size:48px; margin-bottom:12px;">📩</div>
+            <h3 class="modal-title">Verify Your Email Address</h3>
+            <p class="modal-text" style="font-size:14px; margin-bottom:16px;">
+                We have sent a verification link to:<br>
+                <strong id="verif-target-email" style="color:var(--forest-green, #14532D); font-size:15px;">user@example.com</strong>
+            </p>
+            <p class="text-muted" style="font-size:12px; line-height:1.5; margin-bottom:20px;">
+                Please check your inbox (and spam folder), open the email from URVI, and click the link to activate your eco account.
+            </p>
+
+            <div id="verif-feedback" class="feedback-msg hidden" style="margin-bottom:16px;"></div>
+
+            <div class="d-flex flex-column gap-2">
+                <button type="button" class="btn btn-primary" id="btn-check-verification">
+                    <i class="bi bi-patch-check"></i> I've Verified My Email
+                </button>
+                <button type="button" class="btn btn-secondary" id="btn-resend-verification">
+                    Resend Verification Email <span id="resend-cooldown"></span>
+                </button>
+                <button type="button" class="btn btn-outline-danger" id="btn-cancel-verification" style="margin-top:8px; border:none; background:none; color:#DC2626; font-size:13px;">
+                    Log Out & Return to Sign In
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Full-Screen Success Overlay Animation (5 seconds) -->
+    <div id="success-overlay" class="success-overlay hidden">
+        <div class="overlay-content">
+            <div class="leaf-loader-container">
+                <div class="leaf-circle"></div>
+                <span class="animated-leaf">🌱</span>
+            </div>
+            <h2 id="overlay-title">Account Verified!</h2>
+            <p id="overlay-subtitle">Securing your green workspace...</p>
+            <div class="animation-progress-bar">
+                <div class="animation-progress-fill" id="animation-progress-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- "Can't Sign Up?" Support Modal -->
+    <div class="modal-overlay" id="support-modal">
+        <div class="modal-card">
+            <button class="close-btn" id="close-support-modal">&times;</button>
+            
+            <div id="support-step-1">
+                <h3 class="modal-title">Sign Up Support</h3>
+                <p class="modal-text">Encountering an issue? Submit your details for assistance.</p>
+                <div id="support-feedback" class="feedback-msg hidden"></div>
+                <div class="input-group">
+                    <input type="text" id="support-name" required placeholder=" ">
+                    <label for="support-name">Full Name</label>
+                </div>
+                <div class="input-group">
+                    <input type="email" id="support-email" required placeholder=" ">
+                    <label for="support-email">Email Address</label>
+                </div>
+                <div class="input-group">
+                    <input type="tel" id="support-phone" pattern="[0-9]{10}" maxlength="10" required placeholder=" ">
+                    <label for="support-phone">Mobile Number</label>
+                </div>
+                <button type="button" class="btn btn-primary" id="btn-support-submit">Submit Support Request</button>
+            </div>
+
+            <div id="support-step-2" class="hidden text-center">
+                <div class="success-icon">✓</div>
+                <h3 class="modal-title">Request Received</h3>
+                <p class="modal-text">Our team will verify your details and assist you shortly.</p>
+                <button type="button" class="btn btn-secondary" id="btn-support-close">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase & Modules Script -->
+    <script type="module">
+        import {
+            db, auth,
+            createUserWithEmailAndPassword,
+            sendEmailVerification,
+            reload, signOut,
+            ref, set, get, child
+        } from "../config.js";
+        import { uploadToCloudinary, cropToSquare } from "../cloudinary.js";
+        import { validateUsername } from "../components/profanity-filter.js";
+
+        let currentStep = 1;
+        let croppedProfileBlob = null;
+        let pendingUserRecord = null;
+        let resendTimer = null;
+        let cooldownSeconds = 0;
+
+        // UI Selectors
+        const step1Next = document.getElementById('btn-step1-next');
+        const step2Next = document.getElementById('btn-step2-next');
+        const formSubmit = document.getElementById('signup-form');
+        const feedback = document.getElementById('signup-feedback');
+        
+        const firstNameInput = document.getElementById('first-name');
+        const lastNameInput = document.getElementById('last-name');
+        const emailInput = document.getElementById('email');
+        const mobileInput = document.getElementById('mobile');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const confirmPasswordInput = document.getElementById('confirm-password');
+        
+        const avatarClickZone = document.getElementById('avatar-click-zone');
+        const profilePicInput = document.getElementById('profile-pic');
+        const avatarImg = document.getElementById('avatar-img');
+        const avatarSvgPlaceholder = document.querySelector('.avatar-svg-placeholder');
+        
+        const dobInput = document.getElementById('dob');
+        const bioInput = document.getElementById('bio');
+
+        // Verification Modal elements
+        const verifModal = document.getElementById('verification-pending-modal');
+        const verifFeedback = document.getElementById('verif-feedback');
+        const btnCheckVerif = document.getElementById('btn-check-verification');
+        const btnResendVerif = document.getElementById('btn-resend-verification');
+        const btnCancelVerif = document.getElementById('btn-cancel-verification');
+        const resendCooldownSpan = document.getElementById('resend-cooldown');
+
+        // Avatar Upload & Crop
+        avatarClickZone.addEventListener('click', () => profilePicInput.click());
+
+        profilePicInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                try {
+                    croppedProfileBlob = await cropToSquare(file, 300);
+                    avatarImg.src = URL.createObjectURL(croppedProfileBlob);
+                    avatarImg.classList.remove('hidden');
+                    avatarSvgPlaceholder.classList.add('hidden');
+                } catch (err) {
+                    console.error('Crop error:', err);
+                    showFeedback('Failed to process image. Please try another image.', 'error');
+                }
+            }
+        });
+
+        // Step back navigation
+        document.querySelectorAll('.prev-step-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const prev = parseInt(btn.getAttribute('data-prev'));
+                goToStep(prev);
+            });
+        });
+
+        // STEP 1 Validation -> Next
+        step1Next.addEventListener('click', async () => {
+            feedback.classList.add('hidden');
+            const fName = firstNameInput.value.trim();
+            const lName = lastNameInput.value.trim();
+            const email = emailInput.value.trim();
+            const mobile = mobileInput.value.trim();
+
+            if (!fName || !lName || !email || !mobile) {
+                showFeedback("Please fill in all personal details.", "error");
+                return;
+            }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showFeedback("Please enter a valid email address.", "error");
+                return;
+            }
+            if (mobile.length !== 10 || isNaN(mobile)) {
+                showFeedback("Mobile number must be exactly 10 digits.", "error");
+                return;
+            }
+
+            step1Next.innerText = "Checking...";
+            step1Next.disabled = true;
+
+            try {
+                const dbRef = ref(db);
+                const snapshot = await get(child(dbRef, 'users'));
+                let alreadyRegistered = false;
+
+                if (snapshot.exists()) {
+                    const users = snapshot.val();
+                    for (const key in users) {
+                        const user = users[key];
+                        const existingMail = (user.email || user.mail || "").toLowerCase();
+                        const existingMobile = user.mobile ? String(user.mobile) : "";
+
+                        if (existingMail === email.toLowerCase() || existingMobile === mobile) {
+                            alreadyRegistered = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (alreadyRegistered) {
+                    showFeedback("This email address or mobile number is already registered. Please log in.", "error");
+                    step1Next.innerText = "Next Step";
+                    step1Next.disabled = false;
+                    return;
+                }
+
+                // Suggest User ID based on name + last 3 digits of mobile
+                const last3Mobile = mobile.slice(-3);
+                const suggestedId = (fName.replace(/\s+/g, '').toLowerCase()) + last3Mobile;
+                usernameInput.value = suggestedId;
+
+                goToStep(2);
+
+            } catch (err) {
+                console.error(err);
+                showFeedback("Network error: " + err.message, "error");
+            }
+            step1Next.innerText = "Next Step";
+            step1Next.disabled = false;
+        });
+
+        // STEP 2 Validation -> Next (with Intelligent Profanity Check!)
+        step2Next.addEventListener('click', async () => {
+            feedback.classList.add('hidden');
+            const userId = usernameInput.value.trim().toLowerCase();
+            const password = passwordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+
+            if (!userId || !password || !confirmPassword) {
+                showFeedback("Please complete all username and password fields.", "error");
+                return;
+            }
+
+            // Intelligent Profanity & Username validation check
+            const usernameVal = validateUsername(userId);
+            if (!usernameVal.valid) {
+                showFeedback(usernameVal.reason, "error");
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showFeedback("Passwords do not match.", "error");
+                return;
+            }
+            if (password.length < 6) {
+                showFeedback("Password must be at least 6 characters.", "error");
+                return;
+            }
+
+            step2Next.innerText = "Checking...";
+            step2Next.disabled = true;
+
+            try {
+                const snapshot = await get(child(ref(db), `users/${userId}`));
+                if (snapshot.exists()) {
+                    showFeedback("This User ID is already taken. Please choose another.", "error");
+                    step2Next.innerText = "Next Step";
+                    step2Next.disabled = false;
+                    return;
+                }
+                goToStep(3);
+            } catch (err) {
+                console.error(err);
+                showFeedback("Connection issue: " + err.message, "error");
+            }
+            step2Next.innerText = "Next Step";
+            step2Next.disabled = false;
+        });
+
+        // STEP 3: Complete Sign Up -> Auth creation + Email Verification
+        formSubmit.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            feedback.classList.add('hidden');
+
+            const dob = dobInput.value;
+            const bio = bioInput.value.trim();
+            const submitBtn = document.getElementById('btn-signup-submit');
+
+            if (!dob || !bio) {
+                showFeedback("Please enter your date of birth and bio.", "error");
+                return;
+            }
+
+            submitBtn.innerText = "Creating Account...";
+            submitBtn.disabled = true;
+
+            try {
+                const userId = usernameInput.value.trim().toLowerCase();
+                const email = emailInput.value.trim();
+                const password = passwordInput.value;
+
+                // 1. Create Firebase Authentication account
+                let userCred = null;
+                try {
+                    userCred = await createUserWithEmailAndPassword(auth, email, password);
+                } catch (authErr) {
+                    if (authErr.code === 'auth/email-already-in-use') {
+                        throw new Error("This email is already in use by another account.");
+                    }
+                    throw authErr;
+                }
+
+                const user = userCred.user;
+
+                // 2. Send Email Verification
+                await sendEmailVerification(user);
+
+                // 3. Upload photo to Cloudinary if selected
+                let profilePicUrl = "default";
+                if (croppedProfileBlob) {
+                    submitBtn.innerText = "Uploading Photo...";
+                    profilePicUrl = await uploadToCloudinary(croppedProfileBlob);
+                }
+
+                submitBtn.innerText = "Saving Profile...";
+
+                const newUser = {
+                    user_id: userId,
+                    auth_uid: user.uid,
+                    firstName: firstNameInput.value.trim(),
+                    lastName: lastNameInput.value.trim(),
+                    email: email,
+                    mobile: mobileInput.value.trim(),
+                    dob: dob,
+                    bio: bio,
+                    profilePic: profilePicUrl,
+                    userType: "Member",
+                    role: "member",
+                    status: "pending_verification",
+                    isVerified: false,
+                    points: 0,
+                    contributions: 0,
+                    trees_planted: 0,
+                    createdAt: new Date().toISOString()
+                };
+
+                // Store in RTDB
+                await set(ref(db, `users/${userId}`), newUser);
+
+                pendingUserRecord = { userId, email, userCred };
+
+                // Show Email Verification Pending Interface
+                document.getElementById('verif-target-email').innerText = email;
+                verifModal.classList.add('active');
+                startResendCooldown(60);
+
+            } catch (err) {
+                console.error(err);
+                showFeedback("Sign up failed: " + err.message, "error");
+            }
+            submitBtn.innerText = "Complete Sign Up";
+            submitBtn.disabled = false;
+        });
+
+        // Email Verification Check Handler
+        btnCheckVerif.addEventListener('click', async () => {
+            verifFeedback.classList.add('hidden');
+            btnCheckVerif.disabled = true;
+            btnCheckVerif.innerHTML = `<i class="bi bi-hourglass-split me-1"></i> Checking Status...`;
+
+            try {
+                if (auth.currentUser) {
+                    await reload(auth.currentUser);
+                    if (auth.currentUser.emailVerified) {
+                        // Activate user profile in RTDB
+                        if (pendingUserRecord && pendingUserRecord.userId) {
+                            await set(ref(db, `users/${pendingUserRecord.userId}/isVerified`), true);
+                            await set(ref(db, `users/${pendingUserRecord.userId}/status`), "active");
+                            localStorage.setItem('urvi_logged_user', pendingUserRecord.userId);
+                        }
+
+                        verifModal.classList.remove('active');
+                        triggerSuccessAnimation();
+                        return;
+                    }
+                }
+                showFeedbackElement(verifFeedback, "Email is not verified yet. Please check your inbox and click the link.", "warning");
+            } catch (e) {
+                console.error("Reload auth user error:", e);
+                showFeedbackElement(verifFeedback, "Verification check error: " + e.message, "error");
+            }
+
+            btnCheckVerif.disabled = false;
+            btnCheckVerif.innerHTML = `<i class="bi bi-patch-check me-1"></i> I've Verified My Email`;
+        });
+
+        // Resend Verification Email with Cooldown
+        btnResendVerif.addEventListener('click', async () => {
+            if (cooldownSeconds > 0) return;
+            verifFeedback.classList.add('hidden');
+            btnResendVerif.disabled = true;
+
+            try {
+                if (auth.currentUser) {
+                    await sendEmailVerification(auth.currentUser);
+                    showFeedbackElement(verifFeedback, "Verification email resent successfully! Check your inbox.", "success");
+                    startResendCooldown(60);
+                }
+            } catch (e) {
+                console.error("Resend verif error:", e);
+                showFeedbackElement(verifFeedback, "Resend failed: " + e.message, "error");
+                btnResendVerif.disabled = false;
+            }
+        });
+
+        btnCancelVerif.addEventListener('click', async () => {
+            try { await signOut(auth); } catch (e) {}
+            localStorage.removeItem('urvi_logged_user');
+            window.location.href = 'login.html';
+        });
+
+        function startResendCooldown(seconds) {
+            cooldownSeconds = seconds;
+            btnResendVerif.disabled = true;
+            if (resendTimer) clearInterval(resendTimer);
+
+            resendTimer = setInterval(() => {
+                cooldownSeconds--;
+                if (cooldownSeconds <= 0) {
+                    clearInterval(resendTimer);
+                    resendCooldownSpan.innerText = "";
+                    btnResendVerif.disabled = false;
+                } else {
+                    resendCooldownSpan.innerText = `(${cooldownSeconds}s)`;
+                }
+            }, 1000);
+        }
+
+        // 5-Second Custom Dynamic Loading Sequence
+        function triggerSuccessAnimation() {
+            const overlay = document.getElementById('success-overlay');
+            const title = document.getElementById('overlay-title');
+            const subtitle = document.getElementById('overlay-subtitle');
+            const progressFill = document.getElementById('animation-progress-fill');
+
+            overlay.classList.remove('hidden');
+            progressFill.style.width = "30%";
+            
+            setTimeout(() => {
+                title.innerText = "Encrypting Data...";
+                subtitle.innerText = "Syncing your database profile...";
+                progressFill.style.width = "70%";
+            }, 1500);
+
+            setTimeout(() => {
+                title.innerText = "Preparing Dashboard!";
+                subtitle.innerText = "Initializing your eco-footprint dashboard...";
+                progressFill.style.width = "100%";
+            }, 3500);
+
+            setTimeout(() => {
+                window.location.href = '../index.html';
+            }, 5000);
+        }
+
+        // Help Modal Logic ("Can't Sign Up?")
+        const supportTrigger = document.getElementById('support-trigger');
+        const supportModal = document.getElementById('support-modal');
+        const closeSupportModal = document.getElementById('close-support-modal');
+        const btnSupportSubmit = document.getElementById('btn-support-submit');
+        const btnSupportClose = document.getElementById('btn-support-close');
+        
+        const supportStep1 = document.getElementById('support-step-1');
+        const supportStep2 = document.getElementById('support-step-2');
+        const supportFeedback = document.getElementById('support-feedback');
+
+        supportTrigger.addEventListener('click', (e) => {
+            e.preventDefault();
+            supportModal.classList.add('active');
+            supportStep1.classList.remove('hidden');
+            supportStep2.classList.add('hidden');
+            supportFeedback.classList.add('hidden');
+            document.getElementById('support-name').value = '';
+            document.getElementById('support-email').value = '';
+            document.getElementById('support-phone').value = '';
+        });
+
+        const hideSupport = () => supportModal.classList.remove('active');
+        closeSupportModal.addEventListener('click', hideSupport);
+        btnSupportClose.addEventListener('click', hideSupport);
+
+        btnSupportSubmit.addEventListener('click', async () => {
+            supportFeedback.classList.add('hidden');
+            const name = document.getElementById('support-name').value.trim();
+            const email = document.getElementById('support-email').value.trim();
+            const phone = document.getElementById('support-phone').value.trim();
+
+            if (!name || !email || !phone) {
+                showFeedbackElement(supportFeedback, "Please enter all details.", "error");
+                return;
+            }
+            if (phone.length !== 10 || isNaN(phone)) {
+                showFeedbackElement(supportFeedback, "Please enter a valid 10-digit mobile number.", "error");
+                return;
+            }
+
+            btnSupportSubmit.innerText = "Submitting...";
+            btnSupportSubmit.disabled = true;
+
+            try {
+                const helpId = `${phone}_${Date.now()}`;
+                await set(ref(db, `support_requests/${helpId}`), {
+                    full_name: name,
+                    email: email,
+                    mobile: phone,
+                    timestamp: Date.now(),
+                    status: "unresolved"
+                });
+
+                supportStep1.classList.add('hidden');
+                supportStep2.classList.remove('hidden');
+
+            } catch (err) {
+                console.error(err);
+                showFeedbackElement(supportFeedback, "Failed to submit request: " + err.message, "error");
+            }
+
+            btnSupportSubmit.innerText = "Submit Support Request";
+            btnSupportSubmit.disabled = false;
+        });
+
+        // Navigation Steps styling updater
+        function goToStep(step) {
+            currentStep = step;
+            feedback.classList.add('hidden');
+
+            document.querySelectorAll('.form-step').forEach(stepDiv => {
+                stepDiv.classList.add('hidden');
+            });
+            document.getElementById(`step-${step}`).classList.remove('hidden');
+
+            document.querySelectorAll('.step-dot').forEach((dot, index) => {
+                if (index < step) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+
+            const fillWidth = ((step - 1) / 2) * 100;
+            document.getElementById('progress-bar-fill').style.width = `${fillWidth}%`;
+
+            const titles = ["Personal Details", "Account Setup", "Profile Customization"];
+            document.getElementById('step-title').innerText = titles[step - 1];
+            document.getElementById('step-subtitle').innerText = `Step ${step} of 3`;
+        }
+
+        function showFeedback(msg, type) {
+            showFeedbackElement(feedback, msg, type);
+        }
+
+        function showFeedbackElement(element, msg, type) {
+            element.innerText = msg;
+            element.className = `feedback-msg ${type}`;
+            element.classList.remove('hidden');
+            element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    </script>
+</body>
+</html>

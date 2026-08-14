@@ -1,0 +1,178 @@
+================================================================================
+                         URVI PROJECT STRUCTURE & FIREBASE RTDB SCHEMA
+================================================================================
+
+--------------------------------------------------------------------------------
+1. PROJECT FILE STRUCTURE
+--------------------------------------------------------------------------------
+
+URVI-MAIN/
+│
+├── .vscode/
+│   └── settings.json            # VS Code editor configuration
+│
+├── activities/
+│   └── activities.html          # User eco-activities tracking page
+│
+├── assets/
+│   ├── logo.png                 # Main URVI logo image asset
+│   └── README.txt               # Assets documentation file
+│
+├── community/
+│   ├── community.css            # Styling for the Community feed page
+│   ├── community.html           # Main Community feed page (posts, widgets, user search)
+│   └── community.js             # Logic for Community feed, post creation, likes, comments & notifications
+│
+├── components/
+│   ├── layout.js                # Common layout elements / component builder
+│   ├── notifications.js         # Header notification bell widget logic
+│   ├── pwa.js                   # Progressive Web App service worker registration & install prompts
+│   ├── translator.css           # Styling for language translator widget
+│   ├── translator.js            # Translation & language selector logic
+│   └── vineDecoration.html      # Vine decorative SVG/HTML component
+│
+├── impact/
+│   └── impact.html              # Impact metrics dashboard page (trees planted, carbon saved)
+│
+├── index/
+│   ├── libs/
+│   │   ├── bootstrap-icons.min.css # Icon font CSS stylesheet
+│   │   ├── bootstrap-icons.woff     # Web font asset (WOFF)
+│   │   └── bootstrap-icons.woff2    # Web font asset (WOFF2)
+│   ├── index.css                # CSS styles specific to homepage
+│   ├── index.html               # Main homepage layout component
+│   └── index.js                 # Homepage interactive features and logic
+│
+├── logins/
+│   ├── login.html               # User login form & auth logic
+│   ├── logins.css               # Styling for login and signup pages
+│   └── signup.html              # User signup registration form & support request modal
+│
+├── notifications/
+│   ├── notifications.css        # Styling for full notifications page
+│   ├── notifications.html       # Notifications center page layout
+│   └── notifications.js         # Notifications filtering, rendering & mark-as-read logic
+│
+├── profile/
+│   ├── profile.css              # Styling for user profile pages
+│   ├── profile.html             # Logged-in user's own profile page
+│   ├── profile.js               # Logic for managing own profile, editing bio/photo & user posts
+│   ├── user-profile.html        # Public profile page for viewing other users
+│   └── user-profile.js          # Logic for viewing public profiles & follow/unfollow functionality
+│
+├── cloudinary.js                # Cloudinary integration utility for image/video uploads
+├── config.js                    # Firebase app initialization & database configuration export
+├── index.html                   # Root application entry point
+├── logo.png                     # Application logo image file
+├── manifest.json                # PWA web app manifest metadata
+└── sw.js                        # Service Worker for offline caching & PWA support
+
+
+--------------------------------------------------------------------------------
+2. FIREBASE REALTIME DATABASE (RTDB) STRUCTURE
+--------------------------------------------------------------------------------
+
+Root Node: https://<your-firebase-app>.firebaseio.com/
+
+{
+  "users": {
+    "{userId}": {
+      "user_id": "john_doe",            // (string) Unique handle / lowercase User ID
+      "firstName": "John",               // (string) User's first name
+      "lastName": "Doe",                 // (string) User's last name
+      "email": "john@example.com",        // (string) Email address
+      "mobile": "9876543210",            // (string) 10-digit mobile phone number
+      "password": "hashed_or_plain",     // (string) Account password
+      "dob": "1998-05-15",               // (string) Date of birth (YYYY-MM-DD)
+      "bio": "Planting trees for earth", // (string) User profile bio / description
+      "profilePic": "https://res.cloudinary.com/...", // (string) Cloudinary image URL or "default"
+      "userType": "Member",              // (string) Role badge ("Member", "Eco Member", etc.)
+      "role": "admin",                   // (string) Optional role flag ("admin", "verified")
+      "isVerified": true,                // (boolean) Optional verification badge status
+      "points": 0,                       // (number) Eco-points earned
+      "contributions": 0,                // (number) Total community contributions
+      "trees_planted": 0,                // (number) Count of trees planted
+      "createdAt": "2026-08-09T17:00:00.000Z" // (string) ISO timestamp of account creation
+    }
+  },
+
+  "community": {
+    "posts": {
+      "{postId}": {
+        "postId": "-Nxxxxxxxxx",         // (string) Firebase push key
+        "userId": "john_doe",            // (string) Creator's userId
+        "userName": "John Doe",          // (string) Creator's display name
+        "userEmail": "john@example.com",  // (string) Creator's email
+        "userPhoto": "https://...",      // (string) Profile picture URL or "default"
+        "description": "Planted 5 trees today!", // (string) Post text content
+        "imageUrl": "https://...",       // (string) Cloudinary media URL (image/video) or ""
+        "isVideo": false,                // (boolean) True if media attached is a video
+        "location": "Delhi, India",      // (string) User location tag
+        "likesCount": 5,                 // (number) Total likes count
+        "commentsCount": 2,              // (number) Total comments count
+        "sharesCount": 0,                // (number) Total shares count
+        "createdAt": 1754761200000,      // (number) Timestamp in milliseconds (Date.now())
+        "hidden": false                  // (boolean) Optional soft-delete/hide flag
+      }
+    },
+
+    "likes": {
+      "{postId}": {
+        "{userId}": true                 // (boolean) Key-value map indicating user liked the post
+      }
+    },
+
+    "comments": {
+      "{postId}": {
+        "{commentId}": {
+          "commentId": "-Nyyyyyyyyy",   // (string) Firebase push key
+          "userId": "jane_smith",        // (string) Commenter's userId
+          "userName": "Jane Smith",      // (string) Commenter's display name
+          "userPhoto": "https://...",    // (string) Profile picture URL or "default"
+          "text": "Great work! 🌿",      // (string) Text content of the comment
+          "createdAt": 1754761300000     // (number) Timestamp in milliseconds (Date.now())
+        }
+      }
+    },
+
+    "followers": {
+      "{targetUserId}": {
+        "{followerUserId}": true         // (boolean) User ID following targetUserId
+      }
+    },
+
+    "following": {
+      "{currentUserId}": {
+        "{targetUserId}": true           // (boolean) Target User ID being followed by currentUserId
+      }
+    }
+  },
+
+  "notifications": {
+    "{targetUserId}": {
+      "{notificationId}": {
+        "id": "-Nzzzzzzzzz",             // (string) Firebase push key
+        "type": "like",                  // (string) Type: "like" | "comment" | "follow" | "new_post"
+        "fromUserId": "john_doe",        // (string) User ID who triggered notification
+        "fromUserName": "John Doe",      // (string) Display name of initiator
+        "fromUserPhoto": "https://...",  // (string) Profile picture of initiator or "default"
+        "postId": "-Nxxxxxxxxx",         // (string) Associated postId (optional)
+        "message": "John Doe liked your post", // (string) Notification text message
+        "read": false,                   // (boolean) Read status (false = unread dot indicator)
+        "createdAt": 1754761400000       // (number) Timestamp in milliseconds (Date.now())
+      }
+    }
+  },
+
+  "support_requests": {
+    "{helpId}": {                        // Key format: "{mobile}_{timestamp}"
+      "full_name": "Alex Mercer",        // (string) Name of support requestor
+      "email": "alex@example.com",       // (string) Contact email
+      "mobile": "9876543210",            // (string) Contact mobile number
+      "timestamp": 1754761500000,        // (number) Submission timestamp in milliseconds
+      "status": "unresolved"             // (string) Ticket status ("unresolved", "resolved")
+    }
+  }
+}
+
+================================================================================

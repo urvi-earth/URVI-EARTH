@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="../components/dark-mode.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URVI | My Virtual Tree</title>
+    <meta name="description" content="Watch your URVI virtual tree grow with every eco action — track your journey from Seed to Guardian Tree.">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5 & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <!-- PWA -->
+    <link rel="manifest" href="../manifest.json">
+    <link rel="icon" type="image/png" href="../assets/logo.png">
+    <link rel="apple-touch-icon" href="../assets/logo.png">
+    <meta name="theme-color" content="#22C55E">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="URVI">
+
+    <!-- Theme & Page CSS -->
+    <link rel="stylesheet" href="../index/index.css">
+    <link rel="stylesheet" href="../components/translator.css">
+    <link rel="stylesheet" href="my-virtual-tree.css">
+</head>
+<body>
+
+<div class="app-wrapper">
+    <!-- Decorative Right Vine -->
+    <div class="vine-decoration" aria-hidden="true"></div>
+
+    <!-- LEFT SIDEBAR (Desktop) -->
+    <aside class="desktop-sidebar d-none d-lg-flex flex-column">
+        <div class="d-flex align-items-center mb-5">
+            <img src="../assets/logo.png" class="brand-logo-img me-2" alt="URVI Logo" style="width:44px;height:44px;max-width:44px;object-fit:contain;">
+            <div>
+                <h4 class="m-0 fw-bold" style="color:var(--forest-green, #14532D);">URVI</h4>
+                <div class="logo-text">Connect • Care • Conserve</div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav flex-grow-1">
+            <a href="../index.html" class="sidebar-link"><i class="bi bi-house-fill"></i> Home</a>
+            <a href="../activities/activities.html" class="sidebar-link"><i class="bi bi-bar-chart-line-fill"></i> Activities</a>
+            <a href="../impact/impact.html" class="sidebar-link"><i class="bi bi-bullseye"></i> Impact</a>
+            <a href="../community/community.html" class="sidebar-link"><i class="bi bi-people-fill"></i> Community</a>
+            <a href="profile.html" class="sidebar-link"><i class="bi bi-person-circle"></i> Profile</a>
+            <a href="mycertificates.html" class="sidebar-link ps-4" style="font-size:13px; color:#16A34A;"><i class="bi bi-award-fill"></i> My Certificates</a>
+            <a href="my-virtual-tree.html" class="sidebar-link active ps-4" style="font-size:13px; color:#16A34A;"><i class="bi bi-tree-fill"></i> My Virtual Tree</a>
+            <a href="../notifications/notifications.html" class="sidebar-link"><i class="bi bi-bell-fill"></i> Notifications</a>
+            <a href="#" class="sidebar-link" onclick="if(window.openUrviSupportModal) window.openUrviSupportModal(); return false;"><i class="bi bi-headset"></i> Help &amp; Support</a>
+            <a href="#" class="sidebar-link pwa-install-btn" style="color:var(--bright-green, #22C55E);"><i class="bi bi-download"></i> Install App</a>
+        </nav>
+
+        <div class="sidebar-profile-box mt-auto" id="sidebar-profile-box"></div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="tree-page-container" role="main">
+
+        <!-- Header -->
+        <div class="tree-page-header d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 d-lg-none mb-1">
+                    <button type="button" class="mobile-hamburger-btn" id="mobile-hamburger" aria-label="Open menu">
+                        <i class="bi bi-list"></i>
+                    </button>
+                </div>
+                <h4>My Virtual Tree</h4>
+                <p class="tree-page-subtitle">Your URVI journey, growing with every action.</p>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <div class="tree-total-xp-chip" id="tree-header-xp-chip" title="Your Total Accumulated Tree XP">
+                    <span class="xp-chip-star">⭐</span>
+                    <strong class="xp-chip-val" id="header-total-xp">0</strong>
+                    <span class="xp-chip-unit">Tree XP</span>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3 py-2 fw-bold d-flex align-items-center gap-2 shadow-sm" id="btn-view-growth" aria-label="Replay growth animation">
+                    <i class="bi bi-play-circle-fill fs-6"></i> View Growth
+                </button>
+            </div>
+        </div>
+
+        <!-- Public View Banner (shown for ?uid=xxx) -->
+        <div class="public-view-banner d-none" id="public-view-banner">
+            <img src="" alt="User" class="public-avatar" id="public-avatar">
+            <div>
+                <div class="public-name" id="public-name"></div>
+                <div class="public-handle" id="public-handle"></div>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="tree-loading" class="tree-loading-state">
+            <div class="loading-seed" aria-hidden="true">🌱</div>
+            <p>Growing your tree...</p>
+        </div>
+
+        <!-- All Content (hidden until loaded) -->
+        <div id="tree-content" class="d-none">
+
+            <!-- Tree Scene -->
+            <div class="tree-scene-wrapper" id="tree-scene-wrapper" role="img" aria-label="Virtual tree visualization">
+                <div class="tree-level-label">
+                    <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
+                        <span class="level-num" id="scene-level-num">LEVEL 1</span>
+                        <span class="scene-xp-pill" id="scene-xp-pill">0 XP</span>
+                    </div>
+                    <span class="level-name" id="scene-level-name">Seed</span>
+                </div>
+                <div class="tree-svg-container" id="tree-svg-container">
+                    <!-- SVG tree rendered by JS -->
+                </div>
+            </div>
+
+            <!-- XP Progress -->
+            <div class="xp-progress-section">
+                <div class="xp-progress-top">
+                    <div class="xp-label-main"><span id="xp-current">0</span> / <span id="xp-target">250</span> XP</div>
+                    <div class="xp-label-remaining" id="xp-remaining">250 XP to next growth</div>
+                </div>
+                <div class="xp-bar-track">
+                    <div class="xp-bar-fill" id="xp-bar-fill" style="width: 0%;"></div>
+                </div>
+            </div>
+
+            <!-- Level Info -->
+            <div class="level-info-card">
+                <div class="level-info-icon" id="level-info-icon">🌱</div>
+                <div class="level-info-content">
+                    <h5 id="level-info-heading">LEVEL 1</h5>
+                    <div class="level-stage-name" id="level-info-stage">Seed</div>
+                    <p id="level-info-desc">Your journey begins. Plant the seed of change with your first eco action.</p>
+                </div>
+            </div>
+
+            <!-- Tree Journey -->
+            <div class="tree-journey-section">
+                <h5>🗺️ Tree Journey</h5>
+                <ul class="journey-timeline" id="journey-timeline">
+                    <!-- Rendered by JS -->
+                </ul>
+            </div>
+
+            <!-- Eco Journey Stats -->
+            <div class="eco-stats-section">
+                <h5>📊 Your Eco Journey</h5>
+                <div class="eco-stats-grid" id="eco-stats-grid">
+                    <!-- Rendered by JS -->
+                </div>
+            </div>
+
+            <!-- Tree Growth History (owner only) -->
+            <div class="tree-history-section" id="tree-history-section">
+                <h5>📜 Tree Growth History</h5>
+                <ul class="history-list" id="history-list">
+                    <!-- Rendered by JS -->
+                </ul>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<!-- Level-Up Overlay -->
+<div class="levelup-overlay" id="levelup-overlay" role="dialog" aria-label="Level up celebration">
+    <div class="levelup-content">
+        <div class="levelup-tree-wrap" id="levelup-tree-wrap"></div>
+        <div class="levelup-text" id="levelup-text">Your tree is growing...</div>
+        <div class="levelup-title" id="levelup-title">Level Up!</div>
+        <div class="levelup-stage" id="levelup-stage"></div>
+        <button type="button" class="levelup-dismiss" id="levelup-dismiss">Continue</button>
+    </div>
+</div>
+
+<!-- Shared Components -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script type="module" src="../components/drawer.js"></script>
+<script type="module" src="../components/support-modal.js"></script>
+<script type="module" src="../components/pwa.js"></script>
+<script type="module" src="my-virtual-tree.js"></script>
+
+</body>
+</html>

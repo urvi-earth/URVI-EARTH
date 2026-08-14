@@ -1,0 +1,306 @@
+/* =====================================================
+   URVI – notifications.css | Dedicated Notifications Center
+   ===================================================== */
+
+html, body {
+    overflow-x: hidden !important;
+    max-width: 100vw;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.notifications-container {
+    margin-left: 270px;
+    padding: 30px 40px;
+    min-height: 100vh;
+    max-width: 800px;
+    width: calc(100% - 270px);
+    box-sizing: border-box;
+}
+
+.notif-page-header {
+    background: #ffffff;
+    border-radius: 24px;
+    padding: 24px 24px 16px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+    border: 1.5px solid rgba(34, 197, 94, 0.14);
+    margin-bottom: 24px;
+    position: sticky;
+    top: 20px;
+    z-index: 10;
+    backdrop-filter: blur(10px);
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.notif-header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.notif-header-title-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.notif-header-icon {
+    font-size: 32px;
+    flex-shrink: 0;
+}
+
+.notif-page-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--forest-green, #14532D);
+    margin: 0;
+    line-height: 1.2;
+}
+
+.notif-page-subtitle {
+    font-size: 13px;
+    color: #64748B;
+    margin: 3px 0 0;
+    line-height: 1.3;
+}
+
+.btn-mark-all {
+    background: #F0FDF4;
+    color: #22C55E;
+    border: 1px solid rgba(34, 197, 94, 0.25);
+    border-radius: 50px;
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.btn-mark-all:hover {
+    background: #22C55E;
+    color: #ffffff;
+}
+
+/* Tabs */
+.notif-tabs {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+    border-top: 1px solid #F1F5F9;
+    padding-top: 14px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.notif-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.notif-tab {
+    background: #F8FAFC;
+    color: #64748B;
+    border: 1px solid #E2E8F0;
+    border-radius: 50px;
+    padding: 6px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.notif-tab:hover {
+    background: #E2E8F0;
+    color: #1E293B;
+}
+
+.notif-tab.active {
+    background: #14532D;
+    color: #ffffff;
+    border-color: #14532D;
+}
+
+/* List Items */
+.notif-full-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.notif-card-item {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border: 1.5px solid #F1F5F9;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
+    cursor: pointer;
+    transition: all 0.25s ease;
+    position: relative;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.notif-card-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(34, 197, 94, 0.1);
+    border-color: rgba(34, 197, 94, 0.3);
+}
+
+.notif-card-item.unread {
+    background: #F0FDF4;
+    border-color: rgba(34, 197, 94, 0.35);
+}
+
+.notif-card-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 2px solid #22C55E;
+}
+
+.notif-card-initial {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #14532D, #22C55E);
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.notif-card-body {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.notif-card-message {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1E293B;
+    margin: 0;
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+.notif-card-time {
+    font-size: 12px;
+    color: #94A3B8;
+    margin-top: 4px;
+}
+
+.notif-card-badge {
+    font-size: 22px;
+    flex-shrink: 0;
+}
+
+.unread-dot-indicator {
+    width: 10px;
+    height: 10px;
+    background: #22C55E;
+    border-radius: 50%;
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.6);
+}
+
+.notif-empty-state {
+    background: #ffffff;
+    border-radius: 24px;
+    padding: 60px 20px;
+    text-align: center;
+    border: 1.5px solid #F1F5F9;
+}
+
+.notif-empty-icon {
+    font-size: 56px;
+    margin-bottom: 14px;
+}
+
+.notif-empty-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #334155;
+}
+
+.notif-empty-desc {
+    font-size: 13px;
+    color: #94A3B8;
+    margin-top: 6px;
+}
+
+/* ── Mobile Layout Adjustments ── */
+@media (max-width: 991px) {
+    .notifications-container {
+        margin-left: 0 !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+        padding: 12px !important;
+        padding-bottom: 90px !important;
+        box-sizing: border-box !important;
+    }
+
+    .notif-page-header {
+        top: 10px;
+        padding: 16px 14px 12px;
+        border-radius: 18px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .notif-header-top {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .notif-page-title {
+        font-size: 18px;
+    }
+
+    .notif-page-subtitle {
+        font-size: 12px;
+    }
+
+    .btn-mark-all {
+        width: 100%;
+        text-align: center;
+        padding: 8px 14px;
+        font-size: 12px;
+    }
+
+    .notif-card-item {
+        padding: 12px 14px;
+        border-radius: 16px;
+        gap: 12px;
+    }
+
+    .notif-card-avatar, .notif-card-initial {
+        width: 42px;
+        height: 42px;
+        font-size: 16px;
+    }
+}

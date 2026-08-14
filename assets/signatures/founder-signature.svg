@@ -1,0 +1,6 @@
+<svg viewBox="0 0 300 90" width="180" height="54" xmlns="http://www.w3.org/2000/svg">
+  <!-- Elegant Founder Signature -->
+  <path d="M 25,65 C 50,15 65,10 80,35 C 95,65 115,20 135,28 C 155,36 150,60 180,40 C 210,18 225,55 255,30 C 270,18 285,45 290,38" fill="none" stroke="#164A32" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 55,46 C 90,44 140,40 195,38" fill="none" stroke="#C6A15B" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M 75,70 C 130,68 200,66 265,64" fill="none" stroke="#164A32" stroke-width="1.2" stroke-linecap="round"/>
+</svg>

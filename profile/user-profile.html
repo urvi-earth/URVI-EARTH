@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="../components/dark-mode.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URVI | User Profile</title>
+    <meta name="description" content="View environmental profiles, achievements, and posts of URVI community members.">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5 & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <!-- PWA Manifest & Meta Tags -->
+    <link rel="manifest" href="../manifest.json">
+    <link rel="icon" type="image/png" href="../assets/logo.png">
+    <link rel="apple-touch-icon" href="../assets/logo.png">
+    <meta name="theme-color" content="#22C55E">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="URVI">
+
+    <!-- Main Theme + Profile Styles -->
+    <link rel="stylesheet" href="../index/index.css">
+    <link rel="stylesheet" href="profile.css">
+    <link rel="stylesheet" href="../components/translator.css">
+</head>
+<body>
+
+<div class="app-wrapper">
+
+    <!-- LEFT SIDEBAR (Desktop Only) -->
+    <aside class="desktop-sidebar d-none d-lg-flex flex-column">
+        <div class="d-flex align-items-center mb-5">
+            <img src="../assets/logo.png" class="brand-logo-img me-2" alt="URVI Logo" style="width: 44px; height: 44px; max-width: 44px; max-height: 44px; object-fit: contain; flex-shrink: 0;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
+            <span class="brand-icon" style="display:none;">🌿</span>
+            <div>
+                <h4 class="m-0 fw-bold" style="color:var(--forest-green);">URVI</h4>
+                <div class="logo-text">Connect • Care • Conserve</div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav flex-grow-1">
+            <a href="../index.html" class="sidebar-link" id="nav-home">
+                <i class="bi bi-house-fill"></i> Home
+            </a>
+            <a href="../activities/activities.html" class="sidebar-link" id="nav-activities">
+                <i class="bi bi-bar-chart-line-fill"></i> Activities
+            </a>
+            <a href="../impact/impact.html" class="sidebar-link" id="nav-impact">
+                <i class="bi bi-bullseye"></i> Impact
+            </a>
+            <a href="../community/community.html" class="sidebar-link active" id="nav-community">
+                <i class="bi bi-people-fill"></i> Community
+            </a>
+            <a href="../profile/profile.html" class="sidebar-link" id="nav-profile">
+                <i class="bi bi-person-circle"></i> Profile
+            </a>
+            <a href="../profile/mycertificates.html" class="sidebar-link ps-4" id="nav-certificates" style="font-size:13px; color:#16A34A;">
+                <i class="bi bi-award-fill"></i> My Certificates
+            </a>
+            <a href="../profile/my-virtual-tree.html" class="sidebar-link ps-4" id="nav-virtual-tree" style="font-size:13px; color:#16A34A;">
+                <i class="bi bi-tree-fill"></i> My Virtual Tree
+            </a>
+            <a href="../notifications/notifications.html" class="sidebar-link" id="nav-notifications">
+                <i class="bi bi-bell-fill"></i> Notifications
+            </a>
+            <a href="#" class="sidebar-link" onclick="if(window.openUrviSupportModal) window.openUrviSupportModal(); return false;">
+                <i class="bi bi-headset"></i> Help & Support
+            </a>
+            <a href="#" class="sidebar-link pwa-install-btn" id="nav-install-app" style="color:var(--bright-green);">
+                <i class="bi bi-download"></i> Install App
+            </a>
+        </nav>
+
+        <!-- Sidebar Profile Box -->
+        <div class="sidebar-profile-box mt-auto" id="sidebar-profile-box"></div>
+    </aside>
+
+    <main class="main-content">
+        <div class="profile-wrapper">
+
+            <!-- Back Navigation & Notifications Bar -->
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <a href="../community/community.html" class="btn btn-outline-success rounded-pill px-3 py-2" style="font-size:13px; font-weight:600;">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Community
+                </a>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="notification-wrapper">
+                        <button class="notification-btn" id="notification-btn" aria-label="Notifications">
+                            <i class="bi bi-bell"></i>
+                            <span class="notif-dot" id="notif-dot" style="display:none;"></span>
+                        </button>
+                        <div class="notification-dropdown" id="notification-dropdown">
+                            <div class="notif-header">
+                                <h6>Notifications</h6>
+                                <button class="notif-clear-btn" id="notif-mark-read">Mark all read</button>
+                            </div>
+                            <div class="notif-list" id="notif-list">
+                                <div class="notif-empty">No notifications yet 🌿</div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-light rounded-circle shadow-sm" id="btnShareProfile" title="Share Profile" style="width:40px; height:40px;">
+                        <i class="bi bi-share-fill text-success"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Profile Hero Card -->
+            <div class="profile-hero-card">
+                <div class="profile-hero-banner"></div>
+                <div class="profile-hero-body">
+                    <div class="profile-avatar-section">
+                        <div class="profile-pic-wrapper">
+                            <img src="https://ui-avatars.com/api/?name=U&background=22C55E&color=fff&size=200"
+                                 id="user-profile-pic" alt="Profile">
+                        </div>
+                    </div>
+
+                    <div class="profile-info-section">
+                        <h2 id="user-display-name" class="profile-full-name">Loading User...</h2>
+                        <p class="profile-user-id" id="user-handle">@...</p>
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                            <span class="profile-badge" id="user-badge">🌿 Eco Member</span>
+                            <div id="user-tree-badge-container"></div>
+                        </div>
+                        
+                        <p class="mt-2 text-secondary" id="user-bio-text" style="font-size:13px; line-height:1.5;"></p>
+
+                        <!-- Follow / Action Controls -->
+                        <div class="d-flex align-items-center gap-2 mt-3" id="profile-actions">
+                            <button class="follow-btn m-0" id="userFollowBtn">
+                                <i class="bi bi-person-plus-fill"></i> Follow
+                            </button>
+                        </div>
+
+                        <!-- Stats Row -->
+                        <div class="profile-stats-row mt-4">
+                            <div class="profile-stat-item">
+                                <strong id="user-posts-count">0</strong><span>Posts</span>
+                            </div>
+                            <div class="profile-stat-item" id="user-followers-item" style="cursor:pointer;">
+                                <strong id="user-followers-count">0</strong><span>Followers</span>
+                            </div>
+                            <div class="profile-stat-item" id="user-following-item" style="cursor:pointer;">
+                                <strong id="user-following-count">0</strong><span>Following</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Score Cards (Points, Trees, Contributions) -->
+            <div class="score-cards-row">
+                <div class="score-card-item">
+                    <span class="score-card-icon">⭐</span>
+                    <strong id="user-score-points">0</strong>
+                    <small>Green Points</small>
+                </div>
+                <div class="score-card-item">
+                    <span class="score-card-icon">🌳</span>
+                    <strong id="user-score-trees">0</strong>
+                    <small>Trees Planted</small>
+                </div>
+                <div class="score-card-item">
+                    <span class="score-card-icon">🤝</span>
+                    <strong id="user-score-contributions">0</strong>
+                    <small>Contributions</small>
+                </div>
+            </div>
+
+            <!-- User Posts Grid Section -->
+            <div class="my-posts-section">
+                <div class="my-posts-header">
+                    <h5><i class="bi bi-grid-3x3-gap-fill"></i> Posts</h5>
+                </div>
+                <div class="my-posts-grid" id="public-user-posts-grid">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<!-- Decorative Vine -->
+<div id="vineDecoration"></div>
+
+<!-- Post Detail Modal -->
+<div class="modal fade" id="postDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content post-detail-modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Post Preview</h5>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="postDetailBody">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Followers / Following Modal -->
+<div class="modal fade" id="followListModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content" style="border-radius:20px;">
+            <div class="modal-header">
+                <h5 class="modal-title" id="followListTitle">Users</h5>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="followListBody" style="max-height:400px;overflow-y:auto;">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Global Drawer & Support Components -->
+<script type="module" src="../components/theme-toggle.js"></script>
+<script type="module" src="../components/drawer.js"></script>
+<script type="module" src="../components/support-modal.js"></script>
+<script type="module" src="../components/notifications.js"></script>
+<script type="module" src="../components/pwa.js"></script>
+<script type="module" src="../components/translator.js"></script>
+<script type="module" src="user-profile.js"></script>
+<script type="module" src="../components/layout.js"></script>
+</body>
+</html>
+
+

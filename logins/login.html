@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URVI - Login</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Link to CSS -->
+    <link rel="stylesheet" href="logins.css">
+    <style>
+        .btn-google {
+            background: #ffffff;
+            color: #374151;
+            border: 1.5px solid #E5E7EB;
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 14px;
+        }
+        .btn-google:hover {
+            background: #F9FAFB;
+            border-color: #D1D5DB;
+            transform: translateY(-1px);
+        }
+        .divider-or {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            color: #9CA3AF;
+            font-size: 0.8rem;
+            margin: 18px 0;
+        }
+        .divider-or::before, .divider-or::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #E5E7EB;
+        }
+        .divider-or::before { margin-right: 10px; }
+        .divider-or::after { margin-left: 10px; }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <!-- Left Banner: Dynamic Greenery Presentation (Desktop Only) -->
+        <div class="brand-panel">
+            <div class="brand-content">
+                <span class="badge">URVI Initiative</span>
+                <h1>Nurturing the Earth, <br>One Step at a Time</h1>
+                <p>Join our green initiative to plant, track, and sustain global reforestation. Every digital footprint counts towards a greener tomorrow.</p>
+                <div class="leaf-decorative">🍃</div>
+            </div>
+        </div>
+
+        <!-- Right Side: Login Section (Desktop and Mobile) -->
+        <div class="form-panel">
+            <div class="login-card">
+                <div class="logo-wrapper">
+                    <div class="logo-placeholder">
+                        <img id="logo-img" src="../assets/logo.png" alt="Urvi Logo" style="width: 70px; height: 70px; max-width: 70px; max-height: 70px; object-fit: contain;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
+                        <span class="logo-fallback" style="display:none;">🌿 URVI</span>
+                    </div>
+                </div>
+
+                <h2 class="form-title">Welcome Back</h2>
+                <p class="form-subtitle">Log in to check your greenery impact</p>
+
+                <!-- Feedback Message Container -->
+                <div id="login-feedback" class="feedback-msg hidden"></div>
+
+                <!-- Google Sign-In Option -->
+                <button type="button" class="btn-google" id="btn-google-login">
+                    <svg width="20" height="20" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                    </svg>
+                    Continue with Google
+                </button>
+
+                <div class="divider-or">or sign in with email</div>
+
+                <!-- Login Form -->
+                <form id="login-form">
+                    <div class="input-group">
+                        <input type="text" id="login-identifier" required placeholder=" ">
+                        <label for="login-identifier">User ID / Email / Mobile</label>
+                    </div>
+
+                    <div class="input-group">
+                        <input type="password" id="login-password" required placeholder=" ">
+                        <label for="login-password">Password</label>
+                    </div>
+
+                    <div class="forgot-link-container">
+                        <a href="#" id="forgot-password-trigger" class="forgot-link">Forgot Password?</a>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="btn-login-submit">Login</button>
+                </form>
+
+                <div class="form-footer">
+                    <p>New to Urvi? <a href="signup.html" class="accent-link">Create an Account</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Google Profile Completion Modal -->
+    <div class="modal-overlay" id="google-completion-modal">
+        <div class="modal-card">
+            <h3 class="modal-title">Complete Your URVI Profile 🌿</h3>
+            <p class="modal-text">Please provide mandatory details to finalize your Google sign-in.</p>
+
+            <div id="google-modal-feedback" class="feedback-msg hidden"></div>
+
+            <form id="google-completion-form">
+                <div class="input-group" style="margin-bottom:16px;">
+                    <input type="text" id="g-username" required placeholder=" ">
+                    <label for="g-username">Desired User ID / Username</label>
+                </div>
+                <div class="input-group" style="margin-bottom:16px;">
+                    <input type="tel" id="g-mobile" required pattern="[0-9]{10}" maxlength="10" placeholder=" ">
+                    <label for="g-mobile">10-Digit Mobile Number</label>
+                </div>
+                <div class="input-group" style="margin-bottom:16px;">
+                    <input type="date" id="g-dob" required placeholder=" ">
+                    <label for="g-dob">Date of Birth</label>
+                </div>
+                <div class="input-group textarea-group" style="margin-bottom:20px;">
+                    <textarea id="g-bio" rows="2" required placeholder=" " maxlength="150">URVI Eco Champion</textarea>
+                    <label for="g-bio">Bio</label>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="g-submit-btn">Finalize & Sign In</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div class="modal-overlay" id="forgot-modal">
+        <div class="modal-card">
+            <button class="close-btn" id="close-modal">&times;</button>
+            
+            <div id="modal-step-1">
+                <h3 class="modal-title">Reset Password</h3>
+                <p class="modal-text">Enter your registered email address to receive a password reset link.</p>
+                
+                <div id="modal-feedback" class="feedback-msg hidden"></div>
+                
+                <div class="input-group">
+                    <input type="email" id="forgot-identifier" required placeholder=" ">
+                    <label for="forgot-identifier">Registered Email Address</label>
+                </div>
+                <button type="button" class="btn btn-primary" id="btn-forgot-next">Send Reset Email</button>
+            </div>
+
+            <div id="modal-step-2" class="hidden">
+                <div class="success-icon">✓</div>
+                <h3 class="modal-title">Reset Email Sent</h3>
+                <p class="modal-text font-medium">If an account exists with that email, instructions have been dispatched.</p>
+                <button type="button" class="btn btn-secondary" id="btn-forgot-close">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Real-time Firebase Handling Script -->
+    <script type="module">
+        import {
+            db, auth, googleProvider,
+            signInWithEmailAndPassword, signInWithPopup, sendPasswordResetEmail, sendEmailVerification, reload,
+            ref, set, get, child
+        } from "../config.js";
+        import { validateUsername } from "../components/profanity-filter.js";
+
+        const loginForm = document.getElementById('login-form');
+        const loginFeedback = document.getElementById('login-feedback');
+        const loginSubmitBtn = document.getElementById('btn-login-submit');
+        const googleLoginBtn = document.getElementById('btn-google-login');
+
+        const googleModal = document.getElementById('google-completion-modal');
+        const googleForm = document.getElementById('google-completion-form');
+        const googleFeedback = document.getElementById('google-modal-feedback');
+        let pendingGoogleUser = null;
+
+        // Search user by email, user_id, or mobile
+        async function findUserRecord(identifier) {
+            const dbRef = ref(db);
+            const snapshot = await get(child(dbRef, 'users'));
+            if (snapshot.exists()) {
+                const users = snapshot.val();
+                for (const key in users) {
+                    const u = users[key];
+                    if (
+                        key.toLowerCase() === identifier.toLowerCase() ||
+                        (u.user_id && u.user_id.toLowerCase() === identifier.toLowerCase()) ||
+                        (u.email && u.email.toLowerCase() === identifier.toLowerCase()) ||
+                        (u.mobile && String(u.mobile) === identifier)
+                    ) {
+                        return { key, ...u };
+                    }
+                }
+            }
+            return null;
+        }
+
+        // Email & Password Auth Login
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            loginFeedback.classList.add('hidden');
+            loginSubmitBtn.innerText = "Authenticating...";
+            loginSubmitBtn.disabled = true;
+
+            const identifier = document.getElementById('login-identifier').value.trim();
+            const password = document.getElementById('login-password').value;
+
+            try {
+                // Master admin bypass check
+                if (identifier.toLowerCase() === "urvi.earth" || identifier.toLowerCase() === "urvi.earth@urvi.org") {
+                    if (password === "urvi0000") {
+                        localStorage.setItem('urvi_logged_user', 'urvi.earth');
+                        window.location.href = '../index.html';
+                        return;
+                    }
+                }
+
+                const userRecord = await findUserRecord(identifier);
+                const authEmail = userRecord ? userRecord.email : identifier;
+
+                if (!authEmail || !authEmail.includes("@")) {
+                    showFeedback(loginFeedback, "Please enter a valid email address or registered User ID.", "error");
+                    loginSubmitBtn.innerText = "Login";
+                    loginSubmitBtn.disabled = false;
+                    return;
+                }
+
+                // Attempt Firebase Auth sign in
+                try {
+                    const userCred = await signInWithEmailAndPassword(auth, authEmail, password);
+                    const user = userCred.user;
+
+                    // Check real Firebase Auth email verification
+                    if (!user.emailVerified) {
+                        showFeedback(loginFeedback, "Your email is not verified yet. Please check your inbox for the verification link.", "warning");
+                        loginSubmitBtn.innerText = "Login";
+                        loginSubmitBtn.disabled = false;
+                        return;
+                    }
+
+                    const activeUserId = userRecord ? userRecord.key : (user.displayName || user.uid);
+                    
+                    // Verify RTDB status is active
+                    if (userRecord && userRecord.status === "pending_deletion") {
+                        showFeedback(loginFeedback, "Your account is currently scheduled for deletion. Log in to restore your profile.", "warning");
+                    }
+
+                    localStorage.setItem('urvi_logged_user', activeUserId);
+
+                    setTimeout(() => {
+                        window.location.href = '../index.html';
+                    }, 400);
+
+                } catch (authErr) {
+                    // Legacy fallback for pre-existing accounts
+                    if (userRecord && userRecord.password === password) {
+                        const activeUserId = userRecord.key || userRecord.user_id;
+                        localStorage.setItem('urvi_logged_user', activeUserId);
+                        window.location.href = '../index.html';
+                        return;
+                    }
+
+                    showFeedback(loginFeedback, "Invalid email/User ID or password. Please try again.", "error");
+                }
+
+            } catch (err) {
+                console.error(err);
+                showFeedback(loginFeedback, "Authentication error: " + err.message, "error");
+            }
+
+            loginSubmitBtn.innerText = "Login";
+            loginSubmitBtn.disabled = false;
+        });
+
+        // Google Auth Sign-In
+        googleLoginBtn.addEventListener('click', async () => {
+            loginFeedback.classList.add('hidden');
+            try {
+                const result = await signInWithPopup(auth, googleProvider);
+                const gUser = result.user;
+                
+                // Check if Google user already exists in RTDB
+                const snapshot = await get(child(ref(db), 'users'));
+                let existingUser = null;
+                if (snapshot.exists()) {
+                    const users = snapshot.val();
+                    for (const k in users) {
+                        if (users[k].email && users[k].email.toLowerCase() === gUser.email.toLowerCase()) {
+                            existingUser = { key: k, ...users[k] };
+                            break;
+                        }
+                    }
+                }
+
+                if (existingUser && existingUser.mobile && existingUser.dob && existingUser.user_id) {
+                    localStorage.setItem('urvi_logged_user', existingUser.key || existingUser.user_id);
+                    window.location.href = '../index.html';
+                } else {
+                    // Pre-fill suggested User ID from email prefix
+                    const suggestedUser = gUser.email.split("@")[0].toLowerCase().replace(/[^a-z0-9]/g, "");
+                    document.getElementById('g-username').value = suggestedUser;
+                    pendingGoogleUser = gUser;
+                    googleModal.classList.add('active');
+                }
+
+            } catch (gErr) {
+                console.error("Google sign in error:", gErr);
+                showFeedback(loginFeedback, "Google Sign-In failed: " + gErr.message, "error");
+            }
+        });
+
+        // Google Profile Completion Form Submission
+        googleForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!pendingGoogleUser) return;
+
+            const username = document.getElementById('g-username').value.trim().toLowerCase();
+            const mobile = document.getElementById('g-mobile').value.trim();
+            const dob = document.getElementById('g-dob').value;
+            const bio = document.getElementById('g-bio').value.trim();
+            const submitBtn = document.getElementById('g-submit-btn');
+
+            // Validate User ID with profanity filter
+            const usernameVal = validateUsername(username);
+            if (!usernameVal.valid) {
+                showFeedback(googleFeedback, usernameVal.reason, "error");
+                return;
+            }
+
+            if (!/^[0-9]{10}$/.test(mobile)) {
+                showFeedback(googleFeedback, "Mobile must be a valid 10-digit number.", "error");
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Saving Profile...";
+
+            try {
+                // Check username uniqueness
+                const uSnap = await get(child(ref(db), `users/${username}`));
+                if (uSnap.exists()) {
+                    showFeedback(googleFeedback, "That User ID is already taken. Please choose another.", "error");
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = "Finalize & Sign In";
+                    return;
+                }
+
+                const names = (pendingGoogleUser.displayName || "Volunteer").split(" ");
+                const firstName = names[0] || "Eco";
+                const lastName = names.slice(1).join(" ") || "Member";
+
+                const newUser = {
+                    user_id: username,
+                    auth_uid: pendingGoogleUser.uid,
+                    firstName: firstName,
+                    lastName: lastName,
+                    email: pendingGoogleUser.email,
+                    mobile: mobile,
+                    dob: dob,
+                    bio: bio || "URVI Eco Champion",
+                    profilePic: pendingGoogleUser.photoURL || "default",
+                    userType: "Member",
+                    role: "member",
+                    status: "active",
+                    isVerified: true,
+                    points: 0,
+                    contributions: 0,
+                    trees_planted: 0,
+                    createdAt: new Date().toISOString()
+                };
+
+                await set(ref(db, `users/${username}`), newUser);
+                localStorage.setItem('urvi_logged_user', username);
+                window.location.href = '../index.html';
+
+            } catch (err) {
+                console.error(err);
+                showFeedback(googleFeedback, "Save failed: " + err.message, "error");
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Finalize & Sign In";
+            }
+        });
+
+        // Password Reset Modal handling
+        const forgotTrigger = document.getElementById('forgot-password-trigger');
+        const modal = document.getElementById('forgot-modal');
+        const closeModal = document.getElementById('close-modal');
+        const btnForgotNext = document.getElementById('btn-forgot-next');
+        const btnForgotClose = document.getElementById('btn-forgot-close');
+        
+        const step1 = document.getElementById('modal-step-1');
+        const step2 = document.getElementById('modal-step-2');
+        const forgotIdentifier = document.getElementById('forgot-identifier');
+        const modalFeedback = document.getElementById('modal-feedback');
+
+        forgotTrigger.addEventListener('click', (e) => {
+            e.preventDefault();
+            modal.classList.add('active');
+            step1.classList.remove('hidden');
+            step2.classList.add('hidden');
+            modalFeedback.classList.add('hidden');
+            forgotIdentifier.value = '';
+        });
+
+        function hideModal() { 
+            modal.classList.remove('active'); 
+            googleModal.classList.remove('active');
+        }
+        closeModal.addEventListener('click', hideModal);
+        btnForgotClose.addEventListener('click', hideModal);
+
+        btnForgotNext.addEventListener('click', async () => {
+            const inputVal = forgotIdentifier.value.trim();
+            modalFeedback.classList.add('hidden');
+
+            if (!inputVal || !inputVal.includes("@")) {
+                showFeedback(modalFeedback, "Please enter your registered email address.", "error");
+                return;
+            }
+
+            btnForgotNext.innerText = "Sending Reset Email...";
+            btnForgotNext.disabled = true;
+
+            try {
+                await sendPasswordResetEmail(auth, inputVal);
+                step1.classList.add('hidden');
+                step2.classList.remove('hidden');
+            } catch (error) {
+                console.error(error);
+                showFeedback(modalFeedback, "Password reset error: " + error.message, "error");
+            }
+
+            btnForgotNext.innerText = "Send Reset Email";
+            btnForgotNext.disabled = false;
+        });
+
+        window.addEventListener('click', (e) => {
+            if (e.target === modal || e.target === googleModal) hideModal();
+        });
+
+        function showFeedback(element, msg, type) {
+            element.innerText = msg;
+            element.className = `feedback-msg ${type}`;
+            element.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

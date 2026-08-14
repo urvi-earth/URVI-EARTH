@@ -1,0 +1,100 @@
+/* =====================================================
+   URVI – components/translator.css | EN ⇄ TE Language Switcher
+   ===================================================== */
+
+/* ── Hide ALL Google Translate Banners, Popups, & Iframes ── */
+.goog-te-banner-frame.skiptranslate,
+iframe.goog-te-banner-frame,
+.goog-te-banner-frame,
+#goog-gt-tt,
+.goog-te-balloon-frame,
+.VIpgJd-Z255Fd-v48bfa-Jh9256,
+.VIpgJd-Z255Fd-O1fnld-D51e4d,
+.VIpgJd-Z255Fd-l5uO6d,
+iframe[id^=":"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    height: 0 !important;
+    width: 0 !important;
+}
+
+body {
+    top: 0px !important;
+    position: relative !important;
+}
+
+.goog-te-gadget,
+#google_translate_element {
+    display: none !important;
+}
+
+/* Suppress Google hover highlight tooltips */
+font[style] {
+    background-color: transparent !important;
+    box-shadow: none !important;
+}
+
+/* ── Custom Eco Language Toggle Pill ── */
+.lang-toggle-btn {
+    background: #F0FDF4;
+    border: 1.5px solid rgba(34, 197, 94, 0.35);
+    color: #14532D;
+    padding: 6px 14px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    box-shadow: 0 2px 8px rgba(34, 197, 94, 0.1);
+    white-space: nowrap;
+}
+
+.lang-toggle-btn:hover {
+    background: #DCFCE7;
+    border-color: #22C55E;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.18);
+}
+
+.lang-toggle-btn .lang-opt {
+    color: #64748B;
+    font-weight: 600;
+    transition: color 0.2s ease;
+}
+
+.lang-toggle-btn .lang-opt.active {
+    color: #14532D;
+    font-weight: 800;
+}
+
+.lang-toggle-btn .lang-divider {
+    color: #CBD5E1;
+    font-weight: 400;
+}
+
+/* Sidebar Specific Language Toggle */
+.sidebar-lang-container {
+    padding: 10px 0;
+    margin-top: auto;
+    border-top: 1px dashed rgba(34, 197, 94, 0.2);
+}
+
+/* Mobile Top Floating Toggle */
+.mobile-lang-toggle-wrapper {
+    position: fixed;
+    top: 14px;
+    right: 55px;
+    z-index: 9999;
+}
+
+@media (max-width: 991px) {
+    .lang-toggle-btn {
+        padding: 5px 10px;
+        font-size: 11px;
+    }
+}

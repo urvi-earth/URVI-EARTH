@@ -1,0 +1,760 @@
+/* Color definitions utilizing bright and rich greens */
+:root {
+    --bright-green: #22C55E;        /* Vivid Leaf Green */
+    --forest-green: #14532D;        /* Deep Rich Forest Green */
+    --light-green-bg: #F0FDF4;      /* Soft Fresh Minty BG */
+    --gold-accent: #EAB308;         /* Bright Sunflower Gold */
+    --text-dark: #0F172A;           /* High Contrast Dark Gray */
+    --text-light: #64748B;          /* Sleek Secondary Slate Gray */
+    --error-red: #EF4444;           /* Coral red for errors */
+    --white: #FFFFFF;
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Base resets */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    background-color: var(--light-green-bg);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow-x: hidden;
+}
+
+/* Master Layout Grid (Differentiates Desktop vs Mobile) */
+.page-container {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    width: 100vw;
+    height: 100vh;
+    background-color: var(--white);
+}
+
+/* ================= DESKTOP BRANDING VIEW ================= */
+.brand-panel {
+    background: linear-gradient(135deg, var(--bright-green) 0%, var(--forest-green) 100%);
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+    position: relative;
+    overflow: hidden;
+}
+
+.brand-panel::before {
+    content: '';
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 40% 60% 60% 40% / 40% 40% 60% 60%;
+    top: -50px;
+    left: -50px;
+    animation: morphingShape 10s infinite alternate ease-in-out;
+}
+
+.brand-content {
+    max-width: 480px;
+    position: relative;
+    z-index: 2;
+}
+
+.badge {
+    background: rgba(255, 255, 255, 0.15);
+    padding: 6px 16px;
+    border-radius: 30px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    display: inline-block;
+    margin-bottom: 20px;
+}
+
+.brand-content h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 20px;
+    text-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.brand-content p {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.leaf-decorative {
+    font-size: 3rem;
+    margin-top: 30px;
+    display: inline-block;
+    animation: floatLeaf 4s ease-in-out infinite;
+}
+
+/* ================= RIGHT FORM PANEL ================= */
+.form-panel {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+    background-color: var(--white);
+    overflow-y: auto;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 420px;
+    animation: fadeInSlide 0.6s ease-out;
+}
+
+/* ── Logo Image Sizing ── */
+.logo-wrapper {
+    text-align: center;
+    margin-bottom: 16px;
+}
+
+.logo-placeholder {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#logo-img {
+    max-width: 80px;
+    max-height: 80px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 14px;
+}
+
+/* Center Designed Logo Area */
+.logo-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 25px;
+}
+
+.logo-placeholder {
+    width: 70px;
+    height: 70px;
+    background-color: var(--light-green-bg);
+    border: 3px solid var(--bright-green);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
+    transition: var(--transition-smooth);
+}
+
+.logo-placeholder:hover {
+    transform: scale(1.08) rotate(15deg);
+    border-color: var(--gold-accent);
+}
+
+.logo-placeholder img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.logo-fallback {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--forest-green);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.form-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    text-align: center;
+    color: var(--forest-green);
+    margin-bottom: 5px;
+}
+
+.form-subtitle {
+    font-size: 0.88rem;
+    color: var(--text-light);
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+/* Form Errors & Messages styling */
+.feedback-msg {
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-bottom: 20px;
+    text-align: center;
+    animation: shake 0.3s ease;
+}
+
+.feedback-msg.error {
+    background-color: #FEE2E2;
+    color: var(--error-red);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.feedback-msg.success {
+    background-color: var(--light-green-bg);
+    color: var(--forest-green);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+/* Float Label Inputs */
+.input-group {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.input-group input,
+.input-group textarea {
+    width: 100%;
+    padding: 14px;
+    border: 1.5px solid rgba(20, 83, 45, 0.15);
+    border-radius: 10px;
+    outline: none;
+    font-size: 0.95rem;
+    background-color: transparent;
+    color: var(--text-dark);
+    transition: var(--transition-smooth);
+}
+
+.input-group textarea {
+    resize: none;
+}
+
+.input-group label {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--white);
+    padding: 0 4px;
+    color: var(--text-light);
+    transition: var(--transition-smooth);
+    pointer-events: none;
+    font-size: 0.9rem;
+}
+
+/* Focus and State Triggers for Textarea */
+.textarea-group label {
+    top: 24px;
+}
+
+.input-group input:focus,
+.input-group input:not(:placeholder-shown),
+.input-group textarea:focus,
+.input-group textarea:not(:placeholder-shown) {
+    border-color: var(--bright-green);
+}
+
+.input-group input:focus + label,
+.input-group input:not(:placeholder-shown) + label,
+.input-group textarea:focus + label,
+.input-group textarea:not(:placeholder-shown) + label {
+    top: 0;
+    font-size: 0.75rem;
+    color: var(--bright-green);
+    font-weight: 600;
+}
+
+.input-group input:focus,
+.input-group textarea:focus {
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+}
+
+/* Style Calendar Pickers */
+input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(47%) sepia(87%) saturate(354%) hue-rotate(90deg) brightness(92%) contrast(85%);
+    cursor: pointer;
+}
+
+/* Links and actions */
+.forgot-link-container {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 25px;
+}
+
+.forgot-link {
+    color: var(--text-light);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: var(--transition-smooth);
+}
+
+.forgot-link:hover {
+    color: var(--bright-green);
+}
+
+/* Buttons */
+.btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+}
+
+.button-group {
+    display: flex;
+    gap: 12px;
+    margin-top: 25px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--bright-green) 0%, var(--forest-green) 100%);
+    color: var(--white);
+    box-shadow: 0 4px 15px rgba(20, 83, 45, 0.15);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(34, 197, 94, 0.3);
+}
+
+.btn-secondary {
+    background-color: var(--light-green-bg);
+    color: var(--forest-green);
+    border: 1.5px solid var(--forest-green);
+}
+
+.btn-secondary:hover {
+    background-color: var(--forest-green);
+    color: var(--white);
+}
+
+/* Card footer details */
+.form-footer {
+    margin-top: 25px;
+    text-align: center;
+    font-size: 0.88rem;
+    color: var(--text-light);
+}
+
+.support-footer {
+    margin-top: 8px;
+}
+
+.support-link {
+    color: var(--text-light);
+    text-decoration: none;
+    font-size: 0.8rem;
+    transition: var(--transition-smooth);
+}
+
+.support-link:hover {
+    color: var(--error-red);
+    text-decoration: underline;
+}
+
+.accent-link {
+    color: var(--bright-green);
+    text-decoration: none;
+    font-weight: 600;
+    transition: var(--transition-smooth);
+}
+
+.accent-link:hover {
+    color: var(--forest-green);
+    text-decoration: underline;
+}
+
+/* ================= MULTI-STEP SIGN UP ================= */
+.signup-card {
+    margin: 20px 0;
+}
+
+.form-step {
+    animation: fadeInSlide 0.4s ease-out;
+}
+
+/* Step Progress Indicator Styles */
+.step-progress {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    margin-bottom: 30px;
+    padding: 0 10px;
+}
+
+.step-progress::before {
+    content: '';
+    position: absolute;
+    height: 4px;
+    background-color: rgba(20, 83, 45, 0.1);
+    width: calc(100% - 20px);
+    top: 50%;
+    left: 10px;
+    transform: translateY(-50%);
+    z-index: 1;
+}
+
+.progress-bar-fill {
+    position: absolute;
+    height: 4px;
+    background-color: var(--bright-green);
+    width: 0%;
+    top: 50%;
+    left: 10px;
+    transform: translateY(-50%);
+    z-index: 1;
+    transition: width 0.4s ease;
+}
+
+.step-dot {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: var(--white);
+    border: 3.5px solid rgba(20, 83, 45, 0.1);
+    color: var(--text-light);
+    font-size: 0.85rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
+    transition: var(--transition-smooth);
+}
+
+.step-dot.active {
+    border-color: var(--bright-green);
+    background-color: var(--bright-green);
+    color: var(--white);
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.4);
+}
+
+/* Avatar Upload styling updates */
+.avatar-upload-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.avatar-preview {
+    width: 105px;
+    height: 105px;
+    border-radius: 50%;
+    background-color: var(--light-green-bg);
+    border: 3px solid var(--bright-green);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 4px 10px rgba(34, 197, 94, 0.15);
+    cursor: pointer;
+    transition: var(--transition-smooth);
+}
+
+.avatar-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-svg-placeholder {
+    width: 42px;
+    height: 42px;
+    color: var(--forest-green);
+    transition: var(--transition-smooth);
+}
+
+.avatar-overlay-hint {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    background: rgba(20, 83, 45, 0.8);
+    color: var(--white);
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: center;
+    padding: 4px 0;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: var(--transition-smooth);
+}
+
+.avatar-preview:hover {
+    border-color: var(--gold-accent);
+}
+
+.avatar-preview:hover .avatar-overlay-hint {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.avatar-preview:hover .avatar-svg-placeholder {
+    color: var(--gold-accent);
+    transform: scale(1.05);
+}
+
+/* ================= SUCCESS TRANSITION OVERLAY ================= */
+.success-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: radial-gradient(circle at center, var(--bright-green) 0%, var(--forest-green) 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    color: var(--white);
+    text-align: center;
+    animation: zoomInOverlay 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.overlay-content {
+    max-width: 400px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Animated loader element */
+.leaf-loader-container {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 25px;
+}
+
+.leaf-circle {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    border: 3.5px solid rgba(255, 255, 255, 0.15);
+    border-top: 3.5px solid var(--gold-accent);
+    border-radius: 50%;
+    animation: spinLoader 1.5s linear infinite;
+}
+
+.animated-leaf {
+    font-size: 2.2rem;
+    animation: heartbeatLeaf 2s ease-in-out infinite;
+}
+
+.overlay-content h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+}
+
+.overlay-content p {
+    font-size: 0.92rem;
+    color: rgba(255, 255, 255, 0.85);
+    margin-bottom: 25px;
+    min-height: 24px;
+}
+
+/* Success cool progress bar loader */
+.animation-progress-bar {
+    width: 200px;
+    height: 4px;
+    background-color: rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.animation-progress-fill {
+    height: 100%;
+    width: 0%;
+    background-color: var(--gold-accent);
+    border-radius: 10px;
+    transition: width 1.5s ease;
+}
+
+/* ================= MODAL CONFIGURATION ================= */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-card {
+    background: var(--white);
+    padding: 35px 30px;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    position: relative;
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+}
+
+.modal-overlay.active .modal-card {
+    transform: scale(1);
+}
+
+.close-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 1.6rem;
+    color: var(--text-light);
+    cursor: pointer;
+    transition: var(--transition-smooth);
+}
+
+.close-btn:hover {
+    color: var(--error-red);
+}
+
+.modal-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--forest-green);
+    margin-bottom: 10px;
+}
+
+.modal-text {
+    font-size: 0.88rem;
+    color: var(--text-light);
+    line-height: 1.5;
+    margin-bottom: 20px;
+}
+
+.success-icon {
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    background-color: var(--light-green-bg);
+    border: 2px solid var(--bright-green);
+    color: var(--bright-green);
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 15px auto;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ================= ANIMATION LOGIC ================= */
+@keyframes fadeInSlide {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes zoomInOverlay {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes spinLoader {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes heartbeatLeaf {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+@keyframes morphingShape {
+    0% { border-radius: 40% 60% 60% 40% / 40% 40% 60% 60%; }
+    100% { border-radius: 60% 40% 40% 60% / 60% 60% 40% 40%; }
+}
+
+@keyframes floatLeaf {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-8px) rotate(5deg); }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+
+/* ================= MOBILE VIEW RESPONSIVENESS ================= */
+@media (max-width: 900px) {
+    .page-container {
+        grid-template-columns: 1fr;
+        background-color: var(--light-green-bg);
+    }
+
+    .brand-panel {
+        display: none;
+    }
+
+    .form-panel {
+        padding: 20px;
+        background-color: var(--light-green-bg);
+    }
+
+    .login-card {
+        background-color: var(--white);
+        padding: 40px 25px;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(20, 83, 45, 0.08);
+        border: 1px solid rgba(20, 83, 45, 0.05);
+    }
+}

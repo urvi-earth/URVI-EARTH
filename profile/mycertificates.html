@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="../components/dark-mode.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URVI | My Digital Eco Certificates</title>
+    <meta name="description" content="URVI Green Eco Certificates - Official achievements and verified eco awards.">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Cinzel:wght@600;700;800;900&family=Cormorant+Garamond:ital,wght@0,600;0,700;1,500&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5 & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <!-- html2canvas & jsPDF Exporters -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <!-- Main Theme & Certificate CSS -->
+    <link rel="stylesheet" href="../index/index.css">
+    <link rel="stylesheet" href="../components/translator.css">
+    <link rel="stylesheet" href="mycertificates.css">
+</head>
+<body>
+
+<div class="app-wrapper">
+    <!-- Decorative Botanical Right Vine -->
+    <div class="vine-decoration" aria-hidden="true"></div>
+
+    <!-- LEFT SIDEBAR -->
+    <aside class="desktop-sidebar d-none d-lg-flex flex-column">
+        <div class="d-flex align-items-center mb-5">
+            <img src="../assets/logo.png" class="brand-logo-img me-2" alt="URVI Logo" style="width: 44px; height: 44px; max-width: 44px; object-fit: contain;">
+            <div>
+                <h4 class="m-0 fw-bold" style="color:var(--forest-green, #052e16);">URVI</h4>
+                <div class="logo-text">Connect • Care • Conserve</div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav flex-grow-1">
+            <a href="../index.html" class="sidebar-link"><i class="bi bi-house-fill"></i> Home</a>
+            <a href="../activities/activities.html" class="sidebar-link"><i class="bi bi-bar-chart-line-fill"></i> Activities</a>
+            <a href="../impact/impact.html" class="sidebar-link"><i class="bi bi-bullseye"></i> Impact</a>
+            <a href="../community/community.html" class="sidebar-link"><i class="bi bi-people-fill"></i> Community</a>
+            <a href="profile.html" class="sidebar-link"><i class="bi bi-person-circle"></i> Profile</a>
+            <a href="mycertificates.html" class="sidebar-link active ps-4" style="font-size:13px; color:#16A34A;"><i class="bi bi-award-fill"></i> My Certificates</a>
+            <a href="my-virtual-tree.html" class="sidebar-link ps-4" style="font-size:13px; color:#16A34A;"><i class="bi bi-tree-fill"></i> My Virtual Tree</a>
+            <a href="../notifications/notifications.html" class="sidebar-link"><i class="bi bi-bell-fill"></i> Notifications</a>
+            <a href="#" class="sidebar-link" onclick="if(window.openUrviSupportModal) window.openUrviSupportModal(); return false;"><i class="bi bi-headset"></i> Help & Support</a>
+            <a href="#" class="sidebar-link pwa-install-btn" id="nav-install-app" style="color:var(--bright-green, #22C55E);"><i class="bi bi-download"></i> Install App</a>
+        </nav>
+
+        <div class="sidebar-profile-box mt-auto" id="sidebar-profile-box"></div>
+    </aside>
+
+    <main class="certificates-container">
+        <!-- Header -->
+        <header class="top-app-bar mb-4">
+            <div class="d-flex align-items-center d-lg-none">
+                <img src="../assets/logo.png" style="width:34px; height:34px; object-fit:contain;" alt="URVI">
+                <span class="fw-bold ms-2" style="color:var(--forest-green, #052e16);">URVI</span>
+            </div>
+            <div class="d-none d-lg-block">
+                <h4 class="fw-bold m-0">My Digital Eco Certificates 📜</h4>
+            </div>
+        </header>
+
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+            <div>
+                <h3 class="fw-bold text-dark mb-1">Your Verified Eco Achievements</h3>
+                <p class="text-muted m-0" style="font-size:14px;">Official digital certificates awarded for your environmental drives, carbon offsets, and reforestation participation.</p>
+            </div>
+        </div>
+
+        <div class="row g-4" id="certificates-grid">
+            <!-- Injected by mycertificates.js -->
+        </div>
+    </main>
+</div>
+
+<!-- ── Certificate Preview Modal ── -->
+<div class="modal fade" id="certPreviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:24px; background:#0F172A;">
+            <div class="modal-header border-0 pb-0 pt-3 px-4 justify-content-between align-items-center">
+                <h5 class="modal-title text-white fw-bold d-flex align-items-center gap-2" style="font-size:16px;">
+                    <i class="bi bi-award-fill text-warning"></i> Certificate Preview
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-2 p-md-4 text-center overflow-x-hidden" id="certPreviewModalBody">
+                <!-- Dynamically rendered landscape certificate preview -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Offscreen Export Scratch Node for rendering crisp PNG/PDF canvas -->
+<div id="certExportNodeWrapper" style="position:fixed; left:-9999px; top:-9999px; width:1100px; opacity:0; pointer-events:none; z-index:-1;"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script type="module" src="../components/notifications.js"></script>
+<script type="module" src="../components/theme-toggle.js"></script>
+<script type="module" src="mycertificates.js"></script>
+<script type="module" src="../components/drawer.js"></script>
+<script type="module" src="../components/support-modal.js"></script>
+<script type="module" src="../components/translator.js"></script>
+</body>
+</html>
+
+

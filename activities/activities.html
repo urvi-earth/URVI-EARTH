@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="../components/dark-mode.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URVI | Eco Activities & Drives</title>
+    <meta name="description" content="URVI Environmental Activities Workspace - Track and join green drives and campaigns.">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5 & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <!-- PWA Manifest & Meta Tags -->
+    <link rel="manifest" href="../manifest.json">
+    <meta name="theme-color" content="#22C55E">
+
+    <!-- Main Theme -->
+    <link rel="stylesheet" href="../index/index.css">
+    <link rel="stylesheet" href="../components/translator.css">
+    <style>
+        .activities-container {
+            margin-left: 270px; padding: 40px 30px; min-height: 100vh; max-width: 1200px;
+        }
+        .category-filter-btn {
+            background: #F1F5F9; color: #475569; border: none; border-radius: 50px;
+            padding: 8px 18px; font-size: 13px; font-weight: 600; transition: all 0.2s ease; cursor: pointer; flex-shrink: 0;
+        }
+        .category-filter-btn:hover, .category-filter-btn.active {
+            background: #15803D; color: #FFFFFF;
+        }
+        @media (min-width: 1380px) {
+            .activities-container {
+                max-width: 1180px;
+                padding-right: 40px;
+            }
+        }
+        @media (max-width: 991.98px) {
+            .activities-container {
+                margin-left: 0 !important;
+                padding: 16px !important;
+                padding-bottom: 90px !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            .greeting-block {
+                padding: 20px 16px !important;
+                border-radius: 20px !important;
+            }
+            .greeting-block h2 {
+                font-size: 20px !important;
+            }
+            .greeting-block p {
+                font-size: 13px !important;
+            }
+            .category-filter-btn {
+                padding: 6px 14px !important;
+                font-size: 12px !important;
+                white-space: nowrap !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-wrapper">
+    <!-- LEFT SIDEBAR -->
+    <aside class="desktop-sidebar d-none d-lg-flex flex-column">
+        <div class="d-flex align-items-center mb-5">
+            <img src="../assets/logo.png" class="brand-logo-img me-2" alt="URVI Logo" style="width: 44px; height: 44px; max-width: 44px; object-fit: contain;">
+            <div>
+                <h4 class="m-0 fw-bold" style="color:var(--forest-green);">URVI</h4>
+                <div class="logo-text">Connect • Care • Conserve</div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav flex-grow-1">
+            <a href="../index.html" class="sidebar-link"><i class="bi bi-house-fill"></i> Home</a>
+            <a href="activities.html" class="sidebar-link active"><i class="bi bi-bar-chart-line-fill"></i> Activities</a>
+            <a href="../impact/impact.html" class="sidebar-link"><i class="bi bi-bullseye"></i> Impact</a>
+            <a href="../community/community.html" class="sidebar-link"><i class="bi bi-people-fill"></i> Community</a>
+            <a href="../profile/profile.html" class="sidebar-link"><i class="bi bi-person-circle"></i> Profile</a>
+            <a href="../profile/mycertificates.html" class="sidebar-link ps-4" style="font-size:13px; color:#16A34A;"><i class="bi bi-award-fill"></i> My Certificates</a>
+            <a href="../profile/my-virtual-tree.html" class="sidebar-link ps-4" style="font-size:13px; color:#16A34A;"><i class="bi bi-tree-fill"></i> My Virtual Tree</a>
+            <a href="../notifications/notifications.html" class="sidebar-link"><i class="bi bi-bell-fill"></i> Notifications</a>
+            <a href="#" class="sidebar-link" onclick="if(window.openUrviSupportModal) window.openUrviSupportModal(); return false;"><i class="bi bi-headset"></i> Help & Support</a>
+            <a href="#" class="sidebar-link pwa-install-btn" id="nav-install-app" style="color:var(--bright-green, #22C55E);"><i class="bi bi-download"></i> Install App</a>
+        </nav>
+
+        <div class="sidebar-profile-box mt-auto" id="sidebar-profile-box"></div>
+    </aside>
+
+    <main class="activities-container">
+        <!-- Top App Bar Header -->
+        <header class="top-app-bar mb-3">
+            <div class="d-flex align-items-center d-lg-none">
+                <img src="../assets/logo.png" style="width:34px; height:34px; object-fit:contain;" alt="URVI">
+                <span class="fw-bold ms-2" style="color:var(--forest-green, #14532D);">URVI</span>
+            </div>
+            <div class="d-none d-lg-block">
+                <h4 class="fw-bold m-0">Eco Activities & Drives 📊</h4>
+            </div>
+        </header>
+
+        <!-- Banner Block -->
+        <div class="greeting-block mb-4 p-4 rounded-4 text-white" style="background: linear-gradient(135deg, #14532D, #22C55E);">
+            <span class="badge bg-white text-success rounded-pill px-3 py-1 fw-bold mb-2">COMMUNITY DRIVES</span>
+            <h2 class="fw-bold m-0 mb-1">Participate & Make an Impact 🌿</h2>
+            <p class="m-0 opacity-90" style="font-size:14px;">Register for upcoming tree plantation drives, soil cleanup events, and sustainability workshops.</p>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="d-flex align-items-center gap-2 mb-4 overflow-x-auto pb-2" id="category-filters-nav">
+            <button type="button" class="category-filter-btn active" data-category="All">All Drives</button>
+            <button type="button" class="category-filter-btn" data-category="Tree Plantation">Tree Plantation</button>
+            <button type="button" class="category-filter-btn" data-category="Soil Cleanup">Soil Cleanup</button>
+            <button type="button" class="category-filter-btn" data-category="Climate Awareness">Climate Awareness</button>
+            <button type="button" class="category-filter-btn" data-category="Volunteer Drive">Volunteer Drive</button>
+        </div>
+
+        <!-- Upcoming Drives Section -->
+        <section class="mb-5">
+            <h4 class="fw-bold text-dark mb-3">Upcoming Drives & Campaigns</h4>
+            <div class="row g-4" id="events-grid">
+                <!-- Dynamic events loaded here -->
+            </div>
+        </section>
+
+        <!-- My Joined Activities Section -->
+        <section class="mb-5">
+            <h4 class="fw-bold text-dark mb-3">My Registered & Past Joined Activities 📋</h4>
+            <div class="row g-3" id="my-activities-grid">
+                <!-- Dynamic joined activities loaded here -->
+            </div>
+        </section>
+    </main>
+</div>
+
+<script type="module" src="../components/theme-toggle.js"></script>
+<script type="module" src="activities.js"></script>
+<script type="module" src="../components/drawer.js"></script>
+<script type="module" src="../components/support-modal.js"></script>
+<script type="module" src="../components/translator.js"></script>
+</body>
+</html>
+
+
