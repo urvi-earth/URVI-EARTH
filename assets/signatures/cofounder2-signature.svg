@@ -1,0 +1,12 @@
+<svg viewBox="0 0 300 90" width="180" height="54" xmlns="http://www.w3.org/2000/svg">
+  <!-- Elegant Co-Founder J.V.N.H Amarnath Signature -->
+  <path d="M 20,25 C 35,18 55,20 60,38 C 65,58 45,72 35,62 C 28,52 35,30 50,30 C 65,30 75,55 85,38 C 95,20 105,48 118,34 C 128,22 138,50 150,32 C 162,15 170,45 185,28 C 195,15 210,48 225,25 C 238,10 250,42 265,30 C 275,22 285,38 292,30" fill="none" stroke="#164A32" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Calligraphic Lettering Points / Dots for J.V.N.H -->
+  <circle cx="48" cy="22" r="2" fill="#164A32"/>
+  <circle cx="72" cy="22" r="2" fill="#164A32"/>
+  <circle cx="98" cy="20" r="2" fill="#164A32"/>
+  <circle cx="124" cy="20" r="2" fill="#164A32"/>
+  <!-- Gold Accent Flourish & Base Swirl -->
+  <path d="M 30,52 C 85,46 160,42 245,40" fill="none" stroke="#C6A15B" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M 50,68 C 110,64 190,62 270,60" fill="none" stroke="#164A32" stroke-width="1.2" stroke-linecap="round"/>
+</svg>
