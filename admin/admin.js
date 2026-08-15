@@ -576,6 +576,7 @@ async function openEventParticipantsModal(eventId, eventData) {
                             issueDate: today,
                             description: certBody,
                             founderName: "Dasari Sai Balaji",
+                            coFounder2Name: "J.V.N.H Amarnath",
                             coFounderName: "Nakka Sai Suchit",
                             status: "issued",
                             createdAt: Date.now()
@@ -756,6 +757,7 @@ function formatAdminCertItem(userKey, certId, c) {
         issueDate: c.issueDate || "—",
         description: description,
         founderName: (!c.founderName || c.founderName === "Sharoon Kasipeta") ? "Dasari Sai Balaji" : c.founderName,
+        coFounder2Name: c.coFounder2Name || c.coFounderAmarnath || "J.V.N.H Amarnath",
         coFounderName: (!c.coFounderName || c.coFounderName === "URVI Directorate") ? "Nakka Sai Suchit" : c.coFounderName,
         status: c.status || "issued"
     };
@@ -832,6 +834,7 @@ window.openEditCertBodyModal = function(uid, certId) {
     document.getElementById("edit-cert-recipient-name").value = `${cert.recipientName} (@${cert.username})`;
     document.getElementById("edit-cert-event-name").value = cert.eventName;
     document.getElementById("edit-cert-founder-name").value = cert.founderName || "Dasari Sai Balaji";
+    document.getElementById("edit-cert-cofounder2-name").value = cert.coFounder2Name || "J.V.N.H Amarnath";
     document.getElementById("edit-cert-cofounder-name").value = cert.coFounderName || "Nakka Sai Suchit";
     document.getElementById("edit-cert-description").value = cert.description;
 
@@ -852,6 +855,7 @@ document.getElementById("form-edit-cert-body")?.addEventListener("submit", async
     const certId = document.getElementById("edit-cert-id").value;
     const description = document.getElementById("edit-cert-description").value.trim();
     const founderName = document.getElementById("edit-cert-founder-name").value.trim() || "Dasari Sai Balaji";
+    const coFounder2Name = document.getElementById("edit-cert-cofounder2-name")?.value.trim() || "J.V.N.H Amarnath";
     const coFounderName = document.getElementById("edit-cert-cofounder-name").value.trim() || "Nakka Sai Suchit";
     const saveBtn = document.getElementById("btn-save-cert-body");
 
@@ -867,6 +871,7 @@ document.getElementById("form-edit-cert-body")?.addEventListener("submit", async
         await update(ref(db, `certificates/${uid}/${certId}`), {
             description,
             founderName,
+            coFounder2Name,
             coFounderName,
             updatedAt: Date.now()
         });
@@ -1000,6 +1005,15 @@ function renderAdminLandscapeCertHTML(c) {
                         <div class="cert-sig-title">Founder & President</div>
                     </div>
 
+                    <div class="cert-sig-block">
+                        <div class="cert-sig-img-wrap">
+                            <img src="../assets/signatures/cofounder2-signature.png" class="cert-sig-img" alt="Co-Founder Signature" onerror="this.onerror=null; this.src='../assets/signatures/cofounder2-signature.svg';">
+                        </div>
+                        <div class="cert-sig-line"></div>
+                        <div class="cert-sig-name">${c.coFounder2Name || "J.V.N.H Amarnath"}</div>
+                        <div class="cert-sig-title">Co-Founder & Social Media Head</div>
+                    </div>
+
                     <div class="cert-seal-wrap">
                         <div class="cert-emblem-badge" title="URVI Verified Official Document">
                             <img src="../assets/logo.png" class="cert-emblem-logo" alt="Official Seal">
@@ -1013,7 +1027,7 @@ function renderAdminLandscapeCertHTML(c) {
                         </div>
                         <div class="cert-sig-line"></div>
                         <div class="cert-sig-name">${c.coFounderName || "Nakka Sai Suchit"}</div>
-                        <div class="cert-sig-title">Co-Founder & Director</div>
+                        <div class="cert-sig-title">Co-Founder</div>
                     </div>
                 </div>
 
@@ -1023,7 +1037,7 @@ function renderAdminLandscapeCertHTML(c) {
                     </div>
                     <span style="color:#C6A15B;">•</span>
                     <div class="cert-verify-url">
-                        VERIFIABLE DIGITAL CREDENTIAL • <span>urvi.earth/verify?id=${c.certificateId}</span>
+                        VERIFIABLE DIGITAL CREDENTIAL • <span>urvi-earth.vercel.app/verify.html?id=${c.certificateId}</span>
                     </div>
                 </div>
             </div>
