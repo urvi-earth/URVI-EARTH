@@ -275,23 +275,26 @@ body {
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
+    gap: 8px;
     margin-top: 6px;
-    padding: 0 40px;
+    padding: 0 16px;
 }
 .cert-sig-block {
-    width: 210px;
+    flex: 1 1 0;
+    max-width: 215px;
+    min-width: 160px;
     text-align: center;
 }
 .cert-sig-img-wrap {
-    height: 48px;
+    height: 44px;
     display: flex;
     align-items: flex-end;
     justify-content: center;
     margin-bottom: -2px;
 }
 .cert-sig-img {
-    max-height: 46px;
-    max-width: 180px;
+    max-height: 42px;
+    max-width: 155px;
     object-fit: contain;
 }
 .cert-sig-line {
@@ -302,16 +305,18 @@ body {
 .cert-sig-name {
     font-family: 'Cinzel', serif;
     font-weight: 700;
-    font-size: 12px;
+    font-size: 11px;
     color: var(--cert-forest);
     line-height: 1.2;
+    white-space: nowrap;
 }
 .cert-sig-title {
-    font-size: 10px;
+    font-size: 8.5px;
     color: var(--cert-text-muted);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    white-space: nowrap;
 }
 
 /* Center URVI Emblem */
@@ -319,12 +324,13 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0 10px;
+    padding: 0 4px;
     margin-bottom: -2px;
+    flex-shrink: 0;
 }
 .cert-emblem-badge {
-    width: 68px;
-    height: 68px;
+    width: 62px;
+    height: 62px;
     border-radius: 50%;
     background: radial-gradient(circle, #FFFFFF 60%, #F9F7EF 100%);
     border: 2px solid var(--cert-gold);
@@ -336,13 +342,13 @@ body {
     padding: 4px;
 }
 .cert-emblem-logo {
-    width: 38px;
-    height: 38px;
+    width: 34px;
+    height: 34px;
     object-fit: contain;
 }
 .cert-emblem-text {
     font-family: 'Cinzel', serif;
-    font-size: 6px;
+    font-size: 5.5px;
     font-weight: 800;
     color: var(--cert-forest);
     letter-spacing: 0.8px;
