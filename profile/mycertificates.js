@@ -172,6 +172,7 @@ function normalizeCertRecord(key, c, defaultName, defaultHandle) {
                     certificateType: certType,
                     description,
                     founderName: "Dasari Sai Balaji",
+                    coFounder2Name: "J.V.N.H Amarnath",
                     coFounderName: "Nakka Sai Suchit",
                     updatedAt: Date.now()
                 }).catch(() => {});
@@ -194,6 +195,7 @@ function normalizeCertRecord(key, c, defaultName, defaultHandle) {
         issueDate: c.issueDate || c.eventDate || new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
         description: description,
         founderName: (!c.founderName || c.founderName === "Sharoon Kasipeta") ? "Dasari Sai Balaji" : c.founderName,
+        coFounder2Name: c.coFounder2Name || c.coFounderAmarnath || "J.V.N.H Amarnath",
         coFounderName: (!c.coFounderName || c.coFounderName === "URVI Directorate") ? "Nakka Sai Suchit" : c.coFounderName,
         status: c.status || "issued"
     };
@@ -215,6 +217,7 @@ function createSampleCert(userId, fullName, userHandle) {
         issueDate: today,
         description: `In formal recognition of joining URVI (A Greenery Organization) and dedicating your pledge toward environmental conservation, tree plantation, carbon reduction, and ecological stewardship for our Mother Earth.`,
         founderName: "Dasari Sai Balaji",
+        coFounder2Name: "J.V.N.H Amarnath",
         coFounderName: "Nakka Sai Suchit",
         status: "issued"
     };
@@ -350,7 +353,7 @@ function renderCertificateHTML(c) {
 
                 <!-- 6. Signatures & Bottom URVI Emblem -->
                 <div class="cert-bottom-row">
-                    <!-- Left: Founder Signature (Dasari Sai Balaji) -->
+                    <!-- 1. Founder Signature (Dasari Sai Balaji) -->
                     <div class="cert-sig-block">
                         <div class="cert-sig-img-wrap">
                             <img src="../assets/signatures/founder-signature.png" class="cert-sig-img" alt="Founder Signature" onerror="this.onerror=null; this.src='../assets/signatures/founder-signature.svg';">
@@ -360,7 +363,17 @@ function renderCertificateHTML(c) {
                         <div class="cert-sig-title">Founder & President</div>
                     </div>
 
-                    <!-- Center: Clean URVI Emblem -->
+                    <!-- 2. Co-Founder Signature (J.V.N.H Amarnath) -->
+                    <div class="cert-sig-block">
+                        <div class="cert-sig-img-wrap">
+                            <img src="../assets/signatures/cofounder2-signature.png" class="cert-sig-img" alt="Co-Founder Signature" onerror="this.onerror=null; this.src='../assets/signatures/cofounder2-signature.svg';">
+                        </div>
+                        <div class="cert-sig-line"></div>
+                        <div class="cert-sig-name">${c.coFounder2Name || "J.V.N.H Amarnath"}</div>
+                        <div class="cert-sig-title">Co-Founder & Social Media Head</div>
+                    </div>
+
+                    <!-- 3. Clean URVI Official Seal -->
                     <div class="cert-seal-wrap">
                         <div class="cert-emblem-badge" title="URVI Verified Official Document">
                             <img src="../assets/logo.png" class="cert-emblem-logo" alt="URVI Official Emblem">
@@ -368,14 +381,14 @@ function renderCertificateHTML(c) {
                         </div>
                     </div>
 
-                    <!-- Right: Co-Founder Signature (Nakka Sai Suchit) -->
+                    <!-- 4. Co-Founder Signature (Nakka Sai Suchit) -->
                     <div class="cert-sig-block">
                         <div class="cert-sig-img-wrap">
                             <img src="../assets/signatures/cofounder-signature.png" class="cert-sig-img" alt="Co-Founder Signature" onerror="this.onerror=null; this.src='../assets/signatures/cofounder-signature.svg';">
                         </div>
                         <div class="cert-sig-line"></div>
                         <div class="cert-sig-name">${c.coFounderName || "Nakka Sai Suchit"}</div>
-                        <div class="cert-sig-title">Co-Founder & Director</div>
+                        <div class="cert-sig-title">Co-Founder</div>
                     </div>
                 </div>
 
@@ -386,7 +399,7 @@ function renderCertificateHTML(c) {
                     </div>
                     <span style="color:#C6A15B;">•</span>
                     <div class="cert-verify-url">
-                        VERIFIABLE DIGITAL CREDENTIAL • <span>urvi.earth/verify?id=${c.certificateId}</span>
+                        VERIFIABLE DIGITAL CREDENTIAL • <span>urvi-earth.vercel.app/verify.html?id=${c.certificateId}</span>
                     </div>
                 </div>
             </div>
