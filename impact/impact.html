@@ -2,10 +2,12 @@
 <html lang="en">
 <head>
     <script src="../components/dark-mode.js"></script>
+    <link rel="stylesheet" href="../components/loader.css">
+    <script src="../components/loader.js"></script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>URVI | Global Impact & Leaderboards</title>
-    <meta name="description" content="URVI Impact Analytics Workspace - Track carbon capture, tree metrics, and leaderboards.">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>URVI | Ecological Impact & Campaigns</title>
+    <meta name="description" content="URVI Impact & Campaigns Workspace - Explore verified global environmental milestones, register for on-ground tree plantation drives, and track carbon offsets.">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,23 +18,140 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
+    <!-- PWA Manifest & Meta Tags -->
+    <link rel="manifest" href="../manifest.json">
+    <meta name="theme-color" content="#22C55E">
+
     <!-- Main Theme -->
     <link rel="stylesheet" href="../index/index.css">
     <link rel="stylesheet" href="../components/translator.css">
+
     <style>
-        .impact-container { margin-left: 270px; padding: 40px; min-height: 100vh; }
-        .leaderboard-tab {
-            padding: 10px 22px; border-radius: 50px; font-weight: 600; font-size: 13px;
-            cursor: pointer; transition: all 0.2s ease; border: 1.5px solid #E2E8F0; background: #fff; color: #64748B;
+        .impact-container {
+            margin-left: 270px;
+            padding: 36px 30px;
+            min-height: 100vh;
+            max-width: 1200px;
         }
-        .leaderboard-tab.active, .leaderboard-tab:hover {
-            background: #F0FDF4; border-color: #22C55E; color: #16A34A;
+
+        .category-filter-btn {
+            background: #F1F5F9;
+            color: #475569;
+            border: none;
+            border-radius: 50px;
+            padding: 8px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            flex-shrink: 0;
         }
-        .logged-user-row {
-            border: 2px solid #22C55E !important; background: #F0FDF4 !important;
+        .category-filter-btn:hover, .category-filter-btn.active {
+            background: #15803D;
+            color: #FFFFFF;
         }
-        @media (max-width: 992px) {
-            .impact-container { margin-left: 0; padding: 20px; padding-bottom: 90px; }
+
+        .campaign-card {
+            background: #FFFFFF;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid #E2E8F0;
+            transition: all 0.25s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+        }
+        .campaign-card:hover {
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            border-color: #22C55E;
+            transform: translateY(-2px);
+        }
+
+        .campaign-banner-wrapper {
+            height: 170px;
+            overflow: hidden;
+            position: relative;
+            background: #0F172A;
+        }
+
+        .stat-impact-box {
+            background: #FFFFFF;
+            border: 1.5px solid #E2E8F0;
+            border-radius: 20px;
+            padding: 22px 18px;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+        .stat-impact-box:hover {
+            border-color: #22C55E;
+            box-shadow: 0 8px 24px rgba(34, 197, 94, 0.12);
+        }
+        .stat-impact-icon {
+            font-size: 28px;
+            margin-bottom: 4px;
+            line-height: 1;
+        }
+        .stat-impact-num {
+            font-size: 24px;
+            font-weight: 800;
+            color: #15803D;
+            margin: 0;
+            line-height: 1.2;
+        }
+        .stat-impact-lbl {
+            font-size: 13px;
+            color: #64748B;
+            font-weight: 600;
+            margin-top: 2px;
+            display: block;
+        }
+
+        @media (max-width: 991.98px) {
+            .impact-container {
+                margin-left: 0 !important;
+                padding: 14px !important;
+                padding-bottom: 120px !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            .greeting-block {
+                padding: 18px 16px !important;
+                border-radius: 18px !important;
+                margin-bottom: 16px !important;
+            }
+            .greeting-block h2 {
+                font-size: 19px !important;
+            }
+            .greeting-block p {
+                font-size: 12.5px !important;
+                line-height: 1.4 !important;
+            }
+            .impact-section-title {
+                font-size: 16px !important;
+                margin-bottom: 10px !important;
+            }
+            .stat-impact-box {
+                padding: 12px 8px !important;
+                border-radius: 14px !important;
+                border-width: 1px !important;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.03) !important;
+            }
+            .stat-impact-icon {
+                font-size: 22px !important;
+                margin-bottom: 2px !important;
+            }
+            .stat-impact-num {
+                font-size: 18px !important;
+                font-weight: 800 !important;
+                line-height: 1.2 !important;
+            }
+            .stat-impact-lbl {
+                font-size: 11px !important;
+                white-space: nowrap !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+            }
         }
     </style>
 </head>
@@ -51,8 +170,8 @@
 
         <nav class="sidebar-nav flex-grow-1">
             <a href="../index.html" class="sidebar-link"><i class="bi bi-house-fill"></i> Home</a>
-            <a href="../activities/activities.html" class="sidebar-link"><i class="bi bi-bar-chart-line-fill"></i> Activities</a>
-            <a href="impact.html" class="sidebar-link active"><i class="bi bi-bullseye"></i> Impact</a>
+            <a href="../activities/activities.html" class="sidebar-link"><i class="bi bi-calendar-check-fill"></i> Activities & Streaks</a>
+            <a href="impact.html" class="sidebar-link active"><i class="bi bi-bullseye"></i> Impact & Campaigns</a>
             <a href="../community/community.html" class="sidebar-link"><i class="bi bi-people-fill"></i> Community</a>
             <a href="../profile/profile.html" class="sidebar-link"><i class="bi bi-person-circle"></i> Profile</a>
             <a href="../profile/mycertificates.html" class="sidebar-link ps-4" style="font-size:13px; color:#16A34A;"><i class="bi bi-award-fill"></i> My Certificates</a>
@@ -67,40 +186,86 @@
 
     <main class="impact-container">
         <!-- Top App Bar Header -->
-        <header class="top-app-bar mb-4">
+        <header class="top-app-bar mb-3">
             <div class="d-flex align-items-center d-lg-none">
                 <img src="../assets/logo.png" style="width:34px; height:34px; object-fit:contain;" alt="URVI">
                 <span class="fw-bold ms-2" style="color:var(--forest-green);">URVI</span>
             </div>
             <div class="d-none d-lg-block">
-                <h4 class="fw-bold m-0">Global Impact & Leaderboards 🏆</h4>
+                <h4 class="fw-bold m-0">Global Impact & Environmental Drives 🌍</h4>
             </div>
         </header>
 
         <!-- Banner Block -->
-        <div class="greeting-block mb-4 p-4 rounded-4 text-white" style="background: linear-gradient(135deg, #16A34A, #15803D);">
-            <span class="badge bg-white text-success rounded-pill px-3 py-1 fw-bold mb-2">REFORESTATION METRICS</span>
-            <h2 class="fw-bold m-0 mb-1">Environmental Champions Leaderboard 🌟</h2>
-            <p class="m-0 opacity-90" style="font-size:14px;">Recognizing top volunteers driving carbon offset, tree plantation, and community action.</p>
+        <div class="greeting-block mb-4 p-4 rounded-4 text-white" style="background: linear-gradient(135deg, #14532D, #22C55E);">
+            <span class="badge bg-white text-success rounded-pill px-3 py-1 fw-bold mb-2">URVI IMPACT NETWORK</span>
+            <h2 class="fw-bold m-0 mb-1">Our Ecological Footprint & Drives 🌿</h2>
+            <p class="m-0 opacity-90" style="font-size:14px; max-width: 650px;">
+                Explore our unified reforestation metrics, sign up for verified localized campaigns, and take part in on-ground environmental restoration drives.
+            </p>
         </div>
 
-        <!-- Leaderboard Section -->
-        <section class="mb-5">
-            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
-                <div class="d-flex gap-2 flex-wrap" id="leaderboard-tabs-nav">
-                    <button type="button" class="leaderboard-tab active" data-tab="total">🌟 Total Eco Score</button>
-                    <button type="button" class="leaderboard-tab" data-tab="points">🏆 Eco Points</button>
-                    <button type="button" class="leaderboard-tab" data-tab="plants">🌳 Trees Planted</button>
-                    <button type="button" class="leaderboard-tab" data-tab="contributions">🌱 Contributions</button>
+        <!-- Unified Global Impact Counters -->
+        <section class="mb-4">
+            <h4 class="fw-bold text-dark mb-3 impact-section-title"><i class="bi bi-globe-americas text-success me-2"></i>Unified Global Real-Time Metrics</h4>
+            <div class="row g-2 g-md-3">
+                <div class="col-6 col-md-3">
+                    <div class="stat-impact-box">
+                        <div class="stat-impact-icon">🌳</div>
+                        <h3 class="fw-bold text-success stat-impact-num" id="impact-stat-trees">0</h3>
+                        <small class="text-muted fw-semibold stat-impact-lbl">Trees Planted</small>
+                    </div>
                 </div>
-                <button type="button" class="btn btn-outline-success rounded-pill btn-sm px-3 fw-semibold" id="btn-expand-leaderboard">
-                    Show Top 50 Champions
-                </button>
+                <div class="col-6 col-md-3">
+                    <div class="stat-impact-box">
+                        <div class="stat-impact-icon">👥</div>
+                        <h3 class="fw-bold text-success stat-impact-num" id="impact-stat-volunteers">0</h3>
+                        <small class="text-muted fw-semibold stat-impact-lbl">Active Volunteers</small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="stat-impact-box">
+                        <div class="stat-impact-icon">📍</div>
+                        <h3 class="fw-bold text-success stat-impact-num" id="impact-stat-campaigns">0</h3>
+                        <small class="text-muted fw-semibold stat-impact-lbl">Campaigns Run</small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="stat-impact-box">
+                        <div class="stat-impact-icon">⭐</div>
+                        <h3 class="fw-bold text-success stat-impact-num" id="impact-stat-points">0</h3>
+                        <small class="text-muted fw-semibold stat-impact-lbl">Eco Points Awarded</small>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Category Filters Nav -->
+        <div class="d-flex align-items-center gap-2 mb-4 overflow-x-auto pb-2" id="category-filters-nav">
+            <button type="button" class="category-filter-btn active" data-category="All">All Drives</button>
+            <button type="button" class="category-filter-btn" data-category="Tree Plantation">Tree Plantation</button>
+            <button type="button" class="category-filter-btn" data-category="Soil Cleanup">Soil Cleanup</button>
+            <button type="button" class="category-filter-btn" data-category="Climate Awareness">Climate Awareness</button>
+            <button type="button" class="category-filter-btn" data-category="Volunteer Drive">Volunteer Drive</button>
+        </div>
+
+        <!-- Upcoming Campaigns Grid -->
+        <section class="mb-5">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h4 class="fw-bold text-dark m-0"><i class="bi bi-calendar-event-fill text-primary me-2"></i>Upcoming Environmental Campaigns</h4>
+                <span class="badge bg-success-subtle text-success rounded-pill px-3 py-1 fw-semibold small" id="campaigns-count-badge">0 Campaigns</span>
             </div>
 
-            <!-- Leaderboard Rows -->
-            <div id="leaderboard-rows" class="mb-3">
-                <!-- Injected dynamically -->
+            <div class="row g-4" id="events-grid">
+                <!-- Dynamically populated -->
+            </div>
+        </section>
+
+        <!-- My Registered Activities Section -->
+        <section class="mb-5" id="my-registered-section" style="display:none;">
+            <h4 class="fw-bold text-dark mb-3"><i class="bi bi-person-check-fill text-success me-2"></i>My Registered & Past Joined Drives</h4>
+            <div class="row g-3" id="my-activities-grid">
+                <!-- Dynamically populated -->
             </div>
         </section>
 
@@ -108,13 +273,13 @@
         <section class="mb-5">
             <h4 class="fw-bold text-dark mb-3"><i class="bi bi-pin-angle-fill text-warning me-2"></i>Pinned Community Announcements</h4>
             <div class="row g-3" id="pinned-posts-container">
-                <!-- Dynamic pinned posts loaded here -->
+                <!-- Loaded dynamically -->
             </div>
         </section>
     </main>
 </div>
 
-<!-- ── Post Detail Modal ── -->
+<!-- Post Detail Modal -->
 <div class="modal fade" id="postDetailModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content" style="border-radius:20px;">
@@ -135,5 +300,3 @@
 <script type="module" src="../components/translator.js"></script>
 </body>
 </html>
-
-

@@ -3,6 +3,8 @@
 
 <head>
     <script src="../components/dark-mode.js"></script>
+    <link rel="stylesheet" href="../components/loader.css">
+    <script src="../components/loader.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>URVI Community – Connect & Share</title>
@@ -97,7 +99,8 @@
 
         <!-- Community Header -->
         <div class="community-header">
-            <div class="community-title-row">
+            <!-- Desktop Title Row (Desktop Only) -->
+            <div class="community-title-row d-none d-lg-flex">
                 <div class="community-title-block">
                     <span class="community-title-icon">🌿</span>
                     <h2 class="community-title">Community Feed</h2>
@@ -119,9 +122,33 @@
                             </div>
                         </div>
                     </div>
-                    <button type="button" class="create-post-btn-header" data-bs-toggle="modal" data-bs-target="#createPostModal">
+                    <button type="button" class="create-post-btn-header" onclick="openCreatePostModal()">
                         <i class="bi bi-plus-lg"></i> New Post
                     </button>
+                </div>
+            </div>
+
+            <!-- Instagram-Style Mobile Header (Mobile Only) -->
+            <div class="insta-mobile-header d-flex d-lg-none align-items-center justify-content-between mb-3">
+                <button type="button" class="insta-header-btn" onclick="openCreatePostModal()" aria-label="Create Post">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
+                <div class="insta-header-brand">
+                    <img src="../assets/logo.png" alt="URVI" class="insta-brand-logo">
+                    <span class="insta-brand-name">URVI</span>
+                </div>
+                <div class="d-flex align-items-center gap-1">
+                    <a href="../notifications/notifications.html" class="insta-header-btn position-relative" aria-label="Notifications">
+                        <i class="bi bi-heart"></i>
+                        <span class="insta-notif-dot" id="insta-notif-dot" style="display:none;"></span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Real-time 24-Hour Stories Tray (Mobile & Desktop) -->
+            <div class="stories-section mb-3" id="stories-section">
+                <div class="stories-tray-container" id="stories-tray">
+                    <!-- Populated dynamically: Your Story + Realtime User Stories -->
                 </div>
             </div>
 
@@ -216,7 +243,7 @@
 </div>
 
 <!-- Floating Create Post Button (Mobile) -->
-<button type="button" class="create-post-btn d-lg-none" data-bs-toggle="modal" data-bs-target="#createPostModal">
+<button type="button" class="create-post-btn d-lg-none" onclick="openCreatePostModal()" aria-label="Create Post">
     <i class="bi bi-plus-lg"></i>
 </button>
 
@@ -323,6 +350,134 @@
       <path d="M 92.0 930 Q 88.0 931.5 86.0 933.0" stroke="#8B4513" stroke-width="1.5" stroke-linecap="round" fill="none" />
       <path class="vine-leaf" d="M 86.0 933.0 C 76.4 921.8, 68.0 929.2, 62.0 934.0 C 68.0 938.8, 76.4 944.2, 86.0 933.0 Z" fill="url(#lf3)" stroke="#166534" stroke-width="0.8" opacity="0.95" />
     </svg>
+</div>
+
+<!-- ── Story / Post Choice Bottom Sheet Modal ── -->
+<div class="modal fade" id="storyPostChoiceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content rounded-4 border-0 shadow-lg text-center p-3">
+            <h6 class="fw-bold text-dark mb-3">Create New Content 🌿</h6>
+            <div class="d-grid gap-2">
+                <button type="button" class="btn btn-outline-success rounded-pill py-2 fw-bold text-start px-3" id="btn-choice-add-story">
+                    <i class="bi bi-camera-reels-fill text-success me-2"></i> Add 24-Hour Story
+                </button>
+                <button type="button" class="btn btn-outline-primary rounded-pill py-2 fw-bold text-start px-3" data-bs-dismiss="modal" onclick="openCreatePostModal()">
+                    <i class="bi bi-pencil-square text-primary me-2"></i> Create Community Post
+                </button>
+                <button type="button" class="btn btn-light rounded-pill py-2 text-muted small mt-1" data-bs-dismiss="modal">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Upload Story Modal ── -->
+<div class="modal fade" id="uploadStoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
+                <div>
+                    <h5 class="modal-title fw-bold text-dark m-0"><i class="bi bi-camera-fill text-success me-2"></i>Add to Your 24h Story</h5>
+                    <small class="text-muted">Stories automatically expire and vanish after 24 hours.</small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="story-upload-form">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Select Photo or Short Video (Max 30s) *</label>
+                        <input type="file" class="form-control rounded-3" id="story-file-input" accept="image/*,video/*" required>
+                    </div>
+
+                    <div id="story-media-preview-box" class="mb-3 d-none text-center">
+                        <!-- Live preview -->
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Caption (Optional)</label>
+                        <input type="text" class="form-control rounded-3" id="story-caption-input" maxlength="120" placeholder="Add a caption to your story...">
+                    </div>
+
+                    <div class="progress mb-3 d-none" id="story-progress-container" style="height: 8px; border-radius: 8px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" id="story-progress-bar" style="width: 0%;"></div>
+                    </div>
+
+                    <button type="submit" class="btn btn-success w-100 rounded-pill py-2 fw-bold shadow-sm" id="btn-submit-story">
+                        <i class="bi bi-send-fill me-1"></i> Share to Story
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Fullscreen Story Viewer Overlay ── -->
+<div class="story-viewer-overlay d-none" id="storyViewerOverlay">
+    <div class="story-viewer-stage" id="storyViewerStage">
+        <!-- Top Segment Progress Bars -->
+        <div class="story-progress-segments" id="storyProgressSegments"></div>
+
+        <!-- Top Header -->
+        <div class="story-viewer-header">
+            <div class="d-flex align-items-center gap-2">
+                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2322C55E'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E" class="story-header-avatar" id="storyViewerAvatar" alt="User">
+                <div>
+                    <div class="fw-bold small text-white leading-none" id="storyViewerUsername">Username</div>
+                    <small class="text-white-50" style="font-size:10px;" id="storyViewerTime">Just now</small>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <!-- Story Owner Actions: New Story & Delete -->
+                <button type="button" class="btn btn-sm btn-success rounded-pill px-2 py-1 fw-bold text-nowrap d-none" id="btn-story-new" style="font-size: 11px;">
+                    <i class="bi bi-plus-lg me-1"></i>New Story
+                </button>
+                <button type="button" class="btn btn-sm rounded-pill px-2 py-1 fw-bold text-nowrap d-none" id="btn-story-delete" style="font-size: 11px; background: rgba(220, 38, 38, 0.25); border: 1px solid #EF4444; color: #FCA5A5;">
+                    <i class="bi bi-trash3-fill me-1"></i>Delete
+                </button>
+                <button type="button" class="btn-close btn-close-white" id="btn-close-story-viewer" aria-label="Close"></button>
+            </div>
+        </div>
+
+        <!-- Media Stage -->
+        <div id="storyViewerMediaContainer" class="w-100 h-100 d-flex align-items-center justify-content-center">
+            <!-- Image or Video -->
+        </div>
+
+        <!-- Tap Navigation Zones -->
+        <div class="story-nav-tap-zone story-nav-left" id="storyTapLeft" title="Previous story"></div>
+        <div class="story-nav-tap-zone story-nav-right" id="storyTapRight" title="Next story"></div>
+
+        <!-- Caption & Actions Bar -->
+        <div class="story-caption-bar" id="storyCaptionBar">
+            <p class="m-0 small text-white mb-2" id="storyViewerCaption"></p>
+            <div class="d-flex align-items-center justify-content-between pt-1">
+                <!-- Views / Viewers count (Left) -->
+                <div id="storyViewersContainer">
+                    <button type="button" class="story-action-pill" id="btn-story-viewers" title="Views">
+                        <i class="bi bi-eye-fill me-1 text-success"></i> <span id="story-viewers-count">0</span>
+                    </button>
+                </div>
+                <!-- Likes (Right) -->
+                <div id="storyLikesContainer">
+                    <button type="button" class="story-action-pill story-like-btn" id="btn-story-like" title="Like Story">
+                        <i class="bi bi-heart me-1" id="story-like-icon"></i> <span id="story-likes-count">0</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Viewers Sheet (Pop-up inside Story Viewer) -->
+        <div class="story-viewers-sheet d-none" id="storyViewersSheet">
+            <div class="d-flex align-items-center justify-content-between p-3 border-bottom border-secondary">
+                <div class="fw-bold text-white small"><i class="bi bi-eye-fill text-success me-1"></i> Story Viewers (<span id="storyViewersCountBadge">0</span>)</div>
+                <button type="button" class="btn-close btn-close-white" id="btn-close-story-viewers-sheet" aria-label="Close"></button>
+            </div>
+            <div class="p-2" id="storyViewersList" style="max-height: 260px; overflow-y: auto;">
+                <!-- Dynamically populated viewers -->
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Bootstrap JS -->

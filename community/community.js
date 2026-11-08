@@ -1,5 +1,5 @@
 import { db } from "../config.js";
-import { uploadToCloudinary, deleteFromCloudinary, extractPublicIdFromUrl, isVideoUrl } from "../cloudinary.js";
+import { uploadToCloudinary, uploadToCloudinaryDetailed, deleteFromCloudinary, extractPublicIdFromUrl, isVideoUrl } from "../cloudinary.js";
 
 import {
     ref,
@@ -16,7 +16,26 @@ import {
    URVI – community.js | Video Posts, Caching & Widgets
    ===================================================== */
 
-const currentUserId = localStorage.getItem("urvi_logged_user");
+const rawUserId = localStorage.getItem("urvi_logged_user");
+const currentUserId = (rawUserId && rawUserId !== "undefined" && rawUserId !== "null" && rawUserId.trim() !== "")
+    ? rawUserId.trim()
+    : null;
+
+/**
+ * Gatekeeper for creating posts: Guests must log in first
+ */
+window.openCreatePostModal = function () {
+    if (!currentUserId) {
+        alert("Please log in to share posts and stories with the URVI community!");
+        window.location.href = "../logins/login.html";
+        return;
+    }
+    const modalEl = document.getElementById("createPostModal");
+    if (modalEl && window.bootstrap) {
+        const modal = window.bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+    }
+};
 
 // DOM References
 const postText = document.getElementById("postText");
@@ -43,10 +62,36 @@ let isInitialPostsLoaded = false;
    SCROLL POSITION RETENTION & LOCALSTORAGE CACHE
    ===================================================== */
 document.addEventListener("DOMContentLoaded", () => {
-    // 1. Instant Cache Load from LocalStorage for 0ms delay!
-    loadCachedPosts();
+    // 1. Modal Authentication Guards (Ensure guests cannot open post/story modals)
+    document.getElementById("createPostModal")?.addEventListener("show.bs.modal", function (e) {
+        if (!currentUserId) {
+            e.preventDefault();
+            alert("Please log in to share posts and stories with the URVI community!");
+            window.location.href = "../logins/login.html";
+        }
+    });
 
-    // 2. Restore Scroll Position if returning from user profile page
+    document.getElementById("uploadStoryModal")?.addEventListener("show.bs.modal", function (e) {
+        if (!currentUserId) {
+            e.preventDefault();
+            alert("Please log in to keep stories on URVI!");
+            window.location.href = "../logins/login.html";
+        }
+    });
+
+    document.getElementById("storyPostChoiceModal")?.addEventListener("show.bs.modal", function (e) {
+        if (!currentUserId) {
+            e.preventDefault();
+            alert("Please log in to add stories or posts!");
+            window.location.href = "../logins/login.html";
+        }
+    });
+
+    // 2. Instant Cache Load from LocalStorage for 0ms delay!
+    loadCachedPosts();
+    initCommunityStoriesEngine();
+
+    // 3. Restore Scroll Position if returning from user profile page
     const savedScrollPos = sessionStorage.getItem("urvi_community_scroll");
     if (savedScrollPos) {
         setTimeout(() => {
@@ -113,7 +158,16 @@ async function loadSidebarProfile() {
     if (cachedUserData) {
         try {
             const cachedUser = JSON.parse(cachedUserData);
-            renderSidebarBox(cachedUser);
+            const matchesCurrent = !currentUserId || !cachedUser.user_id ||
+                cachedUser.user_id.toLowerCase() === currentUserId.toLowerCase() ||
+                (cachedUser.auth_uid && cachedUser.auth_uid === currentUserId) ||
+                (cachedUser.email && cachedUser.email.toLowerCase() === currentUserId.toLowerCase()) ||
+                currentUserId.toLowerCase() === "urvi.earth";
+            if (matchesCurrent) {
+                renderSidebarBox(cachedUser);
+            } else {
+                localStorage.removeItem("urvi_user_data");
+            }
         } catch (e) { /* ignore */ }
     }
 
@@ -208,18 +262,84 @@ function getVerifiedBadge(user, uid = "", name = "") {
 }
 
 /* =====================================================
-   SEARCH & SUGGESTED CHAMPIONS
+   SEARCH, SUGGESTED CHAMPIONS & INSTAGRAM STORIES
    ===================================================== */
 async function loadAllUsers() {
     try {
+        renderInstagramStories(); // Initial render from cache or placeholders
         const snap = await get(child(ref(db), "users"));
         if (snap.exists()) {
             allUsers = snap.val();
             renderSuggestedUsers();
+            renderInstagramStories(); // Refresh with live users from Firebase
         }
     } catch (e) {
         console.error("Load users error:", e);
     }
+}
+
+function renderInstagramStories() {
+    const storiesScroll = document.getElementById("instaStoriesScroll");
+    if (!storiesScroll) return;
+
+    let currentUser = null;
+    try {
+        const cached = localStorage.getItem("urvi_user_data");
+        if (cached) currentUser = JSON.parse(cached);
+    } catch (e) { /* ignore */ }
+
+    const myPic = currentUser && currentUser.profilePic && currentUser.profilePic.length > 5 && currentUser.profilePic !== "default"
+        ? currentUser.profilePic
+        : null;
+    const myName = currentUser ? (currentUser.firstName || "You") : "You";
+    const myInitial = myName.charAt(0).toUpperCase();
+
+    // 1. "Your Story" item with plus badge
+    let html = `
+        <div class="insta-story-item" id="btn-insta-add-story" data-bs-toggle="modal" data-bs-target="#createPostModal">
+            <div class="insta-story-avatar-wrap your-story">
+                ${myPic 
+                    ? `<img src="${myPic}" class="insta-story-avatar" alt="Your story">`
+                    : `<div class="insta-story-avatar">${myInitial}</div>`
+                }
+                <div class="insta-story-add-badge"><i class="bi bi-plus"></i></div>
+            </div>
+            <span class="insta-story-username">Your story</span>
+        </div>
+    `;
+
+    // 2. Stories from active community members
+    const storyUsers = [];
+    for (const uid in allUsers) {
+        if (uid !== currentUserId) {
+            storyUsers.push({ uid, ...allUsers[uid] });
+        }
+        if (storyUsers.length >= 10) break;
+    }
+
+    if (storyUsers.length > 0) {
+        storyUsers.forEach((u, idx) => {
+            const name = (u.firstName || u.user_id || u.uid || "Eco Friend").split(" ")[0];
+            const pic = u.profilePic && u.profilePic.length > 5 && u.profilePic !== "default"
+                ? u.profilePic
+                : null;
+            const ringType = idx % 2 === 0 ? "" : "green-ring";
+
+            html += `
+                <div class="insta-story-item" onclick="navigateToUserProfile('${u.uid}')">
+                    <div class="insta-story-avatar-wrap ${ringType}">
+                        ${pic 
+                            ? `<img src="${pic}" class="insta-story-avatar" alt="${name}">`
+                            : `<div class="insta-story-avatar">${name.charAt(0).toUpperCase()}</div>`
+                        }
+                    </div>
+                    <span class="insta-story-username">${name}</span>
+                </div>
+            `;
+        });
+    }
+
+    storiesScroll.innerHTML = html;
 }
 
 function renderSuggestedUsers() {
@@ -508,12 +628,17 @@ async function notifyFollowers(authorId, authorUser, postId) {
 /* =====================================================
    REAL-TIME POSTS FEED WITH LOCALSTORAGE CACHING
    ===================================================== */
+if (postsContainer && !postsContainer.children.length && window.getUrviSpinnerHTML) {
+    postsContainer.innerHTML = window.getUrviSpinnerHTML({ text: "Loading community feed..." });
+}
+
 loadPostsRealtime();
 
 function loadPostsRealtime() {
     const postsRef = ref(db, "community/posts");
 
     onValue(postsRef, (snapshot) => {
+        if (window.hideUrviLoader) window.hideUrviLoader();
         if (!snapshot.exists()) {
             postsContainer.innerHTML = `
                 <div class="col-12 text-center p-5 empty-state">
@@ -668,7 +793,11 @@ function createPostCardHTML(post) {
                 <form class="comment-input-row" onsubmit="addComment('${post.postId}', event)">
                     <input type="text" placeholder="Write a comment..." id="comment-input-${post.postId}" maxlength="300" autocomplete="off">
                     <button type="submit"><i class="bi bi-send-fill"></i></button>
-                </form>` : ""}
+                </form>` : `
+                <div class="p-2 text-center my-2 rounded-3 border bg-light" style="cursor:pointer;" onclick="window.location.href='../logins/login.html'">
+                    <small class="text-muted fw-semibold"><i class="bi bi-box-arrow-in-right text-success me-1"></i> Log in to react or join the conversation</small>
+                </div>
+                `}
             </div>
         </div>
     </div>`;
@@ -741,7 +870,7 @@ window.likePost = async function (postId, btn, event) {
     if (event) event.preventDefault();
 
     if (!currentUserId) {
-        alert("Please login first.");
+        alert("Please log in to like posts!");
         window.location.href = "../logins/login.html";
         return;
     }
@@ -863,15 +992,14 @@ window.addComment = async function (postId, event) {
     const text = input.value.trim();
     if (!text) return;
 
-    const activeUser = localStorage.getItem("urvi_logged_user");
-    if (!activeUser) {
-        alert("Please login first.");
+    if (!currentUserId) {
+        alert("Please log in to comment on posts!");
         window.location.href = "../logins/login.html";
         return;
     }
 
     try {
-        const userSnap = await get(child(ref(db), `users/${activeUser}`));
+        const userSnap = await get(child(ref(db), `users/${currentUserId}`));
         const me = userSnap.exists() ? userSnap.val() : {};
         const myName = `${me.firstName || ""} ${me.lastName || ""}`.trim() || "User";
 
@@ -1048,3 +1176,768 @@ function showToast(message) {
 // Init
 loadSidebarProfile();
 loadAllUsers();
+
+// =====================================================
+//  Community Real-Time 24-Hour Stories Engine
+// =====================================================
+let commChoiceModalInstance = null;
+let commUploadStoryModalInstance = null;
+let commSelectedStoryFile = null;
+
+let commStoriesByUser = {};
+let commStoryUserKeys = [];
+let commCurrentStoryUserIdx = 0;
+let commCurrentStoryItemIdx = 0;
+let commStoryStepTimer = null;
+let commStoryAnimationReq = null;
+let commStoryCurrentDuration = 5000;
+
+function getCommSeenStoryIds() {
+    try {
+        return JSON.parse(localStorage.getItem("urvi_seen_story_ids") || "[]");
+    } catch {
+        return [];
+    }
+}
+
+function markCommStoryAsSeen(storyId) {
+    if (!storyId) return;
+    const seen = getCommSeenStoryIds();
+    if (!seen.includes(storyId)) {
+        seen.push(storyId);
+        try {
+            localStorage.setItem("urvi_seen_story_ids", JSON.stringify(seen.slice(-200)));
+        } catch { /* ignore */ }
+    }
+}
+
+function initCommunityStoriesEngine() {
+    const choiceModalEl = document.getElementById("storyPostChoiceModal");
+    const uploadModalEl = document.getElementById("uploadStoryModal");
+
+    if (window.bootstrap && window.bootstrap.Modal) {
+        if (choiceModalEl) commChoiceModalInstance = new window.bootstrap.Modal(choiceModalEl);
+        if (uploadModalEl) commUploadStoryModalInstance = new window.bootstrap.Modal(uploadModalEl);
+    }
+
+    document.getElementById("btn-choice-add-story")?.addEventListener("click", () => {
+        if (!currentUserId) {
+            alert("Please log in to keep stories on URVI!");
+            window.location.href = "../logins/login.html";
+            return;
+        }
+        if (commChoiceModalInstance) commChoiceModalInstance.hide();
+        if (commUploadStoryModalInstance) commUploadStoryModalInstance.show();
+    });
+
+    setupCommStoryUploadHandlers();
+    setupCommStoryViewerEvents();
+
+    // Listen on Firebase stories/
+    onValue(ref(db, "stories"), (snapshot) => {
+        const rawStories = snapshot.val() || {};
+        renderCommStoriesTray(rawStories);
+    });
+}
+
+function setupCommStoryUploadHandlers() {
+    const fileInput = document.getElementById("story-file-input");
+    const previewBox = document.getElementById("story-media-preview-box");
+    const form = document.getElementById("story-upload-form");
+    const submitBtn = document.getElementById("btn-submit-story");
+    const progressContainer = document.getElementById("story-progress-container");
+    const progressBar = document.getElementById("story-progress-bar");
+
+    fileInput?.addEventListener("change", function () {
+        commSelectedStoryFile = this.files[0] || null;
+        if (!commSelectedStoryFile) {
+            previewBox?.classList.add("d-none");
+            return;
+        }
+
+        const isVideo = commSelectedStoryFile.type.startsWith("video/");
+        if (isVideo) {
+            const v = document.createElement("video");
+            v.preload = "metadata";
+            v.onloadedmetadata = function () {
+                window.URL.revokeObjectURL(v.src);
+                if (v.duration > 30) {
+                    alert("⚠️ Story videos are limited to 30 seconds. Please select a shorter video clip.");
+                    fileInput.value = "";
+                    commSelectedStoryFile = null;
+                    previewBox?.classList.add("d-none");
+                } else {
+                    renderCommStoryPreview(commSelectedStoryFile, true);
+                }
+            };
+            v.src = URL.createObjectURL(commSelectedStoryFile);
+        } else {
+            renderCommStoryPreview(commSelectedStoryFile, false);
+        }
+    });
+
+    function renderCommStoryPreview(file, isVid) {
+        if (!previewBox) return;
+        previewBox.classList.remove("d-none");
+        const url = URL.createObjectURL(file);
+        if (isVid) {
+            previewBox.innerHTML = `<video src="${url}" controls class="w-100 rounded-3" style="max-height:220px; background:#0F172A;"></video>`;
+        } else {
+            previewBox.innerHTML = `<img src="${url}" class="w-100 rounded-3" style="max-height:220px; object-fit:cover;" alt="Story Preview">`;
+        }
+    }
+
+    form?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!currentUserId) {
+            alert("Please log in to share stories!");
+            window.location.href = "../logins/login.html";
+            return;
+        }
+
+        if (!commSelectedStoryFile) {
+            alert("Please select a photo or video to share.");
+            return;
+        }
+
+        const caption = document.getElementById("story-caption-input")?.value.trim() || "";
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Uploading...`;
+        progressContainer?.classList.remove("d-none");
+
+        try {
+            const cloudData = await uploadToCloudinaryDetailed(commSelectedStoryFile, (pct) => {
+                if (progressBar) progressBar.style.width = `${pct}%`;
+            });
+
+            let authorName = "Volunteer";
+            let authorPic = "";
+            const cached = localStorage.getItem("urvi_user_data");
+            if (cached) {
+                try {
+                    const u = JSON.parse(cached);
+                    authorName = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.name || currentUserId;
+                    authorPic = u.profilePic || "";
+                } catch { /* ignore */ }
+            }
+
+            const isVid = commSelectedStoryFile.type.startsWith("video/") || cloudData.resource_type === "video";
+            const now = Date.now();
+
+            const newStoryRef = push(ref(db, "stories"));
+            await set(newStoryRef, {
+                userId: currentUserId,
+                username: authorName,
+                userAvatar: authorPic,
+                mediaUrl: cloudData.secure_url,
+                mediaType: isVid ? "video" : "image",
+                caption: caption,
+                createdAt: now,
+                expiresAt: now + (24 * 60 * 60 * 1000)
+            });
+
+            form.reset();
+            commSelectedStoryFile = null;
+            previewBox?.classList.add("d-none");
+            progressContainer?.classList.add("d-none");
+            if (progressBar) progressBar.style.width = "0%";
+            if (commUploadStoryModalInstance) commUploadStoryModalInstance.hide();
+
+            alert("🎉 Your 24-hour Story has been shared!");
+        } catch (err) {
+            console.error("Story upload error:", err);
+            alert("Failed to post story: " + err.message);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `<i class="bi bi-send-fill me-1"></i> Share to Story`;
+        }
+    });
+}
+
+function renderCommStoriesTray(rawStories) {
+    const tray = document.getElementById("stories-tray");
+    if (!tray) return;
+
+    const now = Date.now();
+    const seenIds = getCommSeenStoryIds();
+
+    const activeStories = Object.entries(rawStories)
+        .map(([id, data]) => ({ id, ...data }))
+        .filter(s => s.expiresAt && s.expiresAt > now);
+
+    commStoriesByUser = {};
+    activeStories.forEach(s => {
+        const uid = s.userId || "anonymous";
+        if (!commStoriesByUser[uid]) commStoriesByUser[uid] = [];
+        commStoriesByUser[uid].push(s);
+    });
+
+    Object.keys(commStoriesByUser).forEach(uid => {
+        commStoriesByUser[uid].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+    });
+
+    const otherUsers = Object.keys(commStoriesByUser).filter(uid => uid !== currentUserId);
+    otherUsers.sort((a, b) => {
+        const aHasUnseen = commStoriesByUser[a].some(s => !seenIds.includes(s.id));
+        const bHasUnseen = commStoriesByUser[b].some(s => !seenIds.includes(s.id));
+        if (aHasUnseen && !bHasUnseen) return -1;
+        if (!aHasUnseen && bHasUnseen) return 1;
+        return (commStoriesByUser[b][0]?.createdAt || 0) - (commStoriesByUser[a][0]?.createdAt || 0);
+    });
+
+    commStoryUserKeys = [];
+    if (currentUserId && commStoriesByUser[currentUserId]) {
+        commStoryUserKeys.push(currentUserId);
+    }
+    commStoryUserKeys = commStoryUserKeys.concat(otherUsers);
+
+    let html = "";
+
+    let myAvatar = null;
+    let myName = "You";
+    if (currentUserId) {
+        const cached = localStorage.getItem("urvi_user_data");
+        if (cached) {
+            try {
+                const u = JSON.parse(cached);
+                if (u.profilePic && u.profilePic.length > 5 && u.profilePic !== "default" && !u.profilePic.includes("logo.png")) {
+                    myAvatar = u.profilePic;
+                }
+                myName = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.name || u.user_id || currentUserId;
+            } catch { /* ignore */ }
+        }
+    }
+
+    const myInitial = (myName.charAt(0) || "U").toUpperCase();
+    const myStories = currentUserId ? (commStoriesByUser[currentUserId] || []) : [];
+    const hasMyStories = myStories.length > 0;
+    const myRingClass = hasMyStories ? "story-ring" : "story-ring seen";
+
+    const myAvatarHTML = myAvatar
+        ? `<img src="${myAvatar}" class="story-avatar-img" alt="Your Story">`
+        : (currentUserId
+            ? `<div class="story-avatar-img story-avatar-initial">${myInitial}</div>`
+            : `<div class="story-avatar-img story-avatar-initial" style="background:#E2E8F0;color:#64748B;"><i class="bi bi-person-fill" style="font-size:22px;"></i></div>`
+        );
+
+    html += `
+        <div class="story-item" id="comm-story-item-self">
+            <div class="${myRingClass}">
+                ${myAvatarHTML}
+                <div class="story-add-badge"><i class="bi bi-plus-lg"></i></div>
+            </div>
+            <span class="story-username">Your Story</span>
+        </div>
+    `;
+
+    otherUsers.forEach(uid => {
+        const uStories = commStoriesByUser[uid];
+        const latestStory = uStories[uStories.length - 1];
+        const allSeen = uStories.every(s => seenIds.includes(s.id));
+        const ringClass = allSeen ? "story-ring seen" : "story-ring";
+        const hasPic = latestStory.userAvatar && latestStory.userAvatar.length > 5 && latestStory.userAvatar !== "default" && !latestStory.userAvatar.includes("logo.png");
+        const name = latestStory.username || uid;
+        const initial = (name.charAt(0) || "U").toUpperCase();
+
+        const userAvatarHTML = hasPic
+            ? `<img src="${latestStory.userAvatar}" class="story-avatar-img" alt="${name}">`
+            : `<div class="story-avatar-img story-avatar-initial" style="background:linear-gradient(135deg,#10B981 0%,#047857 100%);color:#fff;">${initial}</div>`;
+
+        html += `
+            <div class="story-item comm-story-user-bubble" data-uid="${uid}">
+                <div class="${ringClass}">
+                    ${userAvatarHTML}
+                </div>
+                <span class="story-username">${name}</span>
+            </div>
+        `;
+    });
+
+    tray.innerHTML = html;
+
+    document.getElementById("comm-story-item-self")?.addEventListener("click", () => {
+        if (!currentUserId) {
+            alert("Please log in to add stories or community posts!");
+            window.location.href = "../logins/login.html";
+            return;
+        }
+        // If user has stories, directly open their story in the viewer
+        // Inside the viewer, they immediately see "New Story" and "Delete" options
+        if (hasMyStories) {
+            openCommStoryViewer(currentUserId);
+            return;
+        }
+        if (commChoiceModalInstance) commChoiceModalInstance.show();
+    });
+
+    tray.querySelectorAll(".comm-story-user-bubble").forEach(bubble => {
+        bubble.addEventListener("click", () => {
+            const uid = bubble.dataset.uid;
+            openCommStoryViewer(uid);
+        });
+    });
+}
+
+const commSessionViewedStories = new Set();
+let isCommStoryPaused = false;
+let commStoryRemainingTime = 5000;
+
+function pauseCommStoryTimer() {
+    if (isCommStoryPaused) return;
+    isCommStoryPaused = true;
+    clearTimeout(commStoryStepTimer);
+    cancelAnimationFrame(commStoryAnimationReq);
+    const mediaContainer = document.getElementById("storyViewerMediaContainer");
+    const vid = mediaContainer?.querySelector("video");
+    if (vid) vid.pause();
+    const elapsed = performance.now() - commStoryProgressStart;
+    commStoryRemainingTime = Math.max(500, commStoryCurrentDuration - elapsed);
+}
+
+function resumeCommStoryTimer() {
+    if (!isCommStoryPaused) return;
+    isCommStoryPaused = false;
+    const mediaContainer = document.getElementById("storyViewerMediaContainer");
+    const vid = mediaContainer?.querySelector("video");
+    if (vid) {
+        vid.play().catch(() => {});
+    }
+    const currentFill = document.getElementById(`comm-story-progress-fill-${commCurrentStoryItemIdx}`);
+    commStoryProgressStart = performance.now() - (commStoryCurrentDuration - commStoryRemainingTime);
+    runCommStoryProgressAnimation(currentFill, commStoryCurrentDuration);
+    commStoryStepTimer = setTimeout(() => {
+        advanceCommStory(1);
+    }, commStoryRemainingTime);
+}
+
+function openCommStoryViewer(userId) {
+    const overlay = document.getElementById("storyViewerOverlay");
+    if (!overlay) return;
+
+    const userIdx = commStoryUserKeys.indexOf(userId);
+    if (userIdx === -1) return;
+
+    commCurrentStoryUserIdx = userIdx;
+    commCurrentStoryItemIdx = 0;
+
+    overlay.classList.remove("d-none");
+    document.body.style.overflow = "hidden";
+
+    showCommStoryItem();
+}
+
+function closeCommStoryViewer() {
+    const overlay = document.getElementById("storyViewerOverlay");
+    if (overlay) overlay.classList.add("d-none");
+    document.body.style.overflow = "";
+
+    clearTimeout(commStoryStepTimer);
+    cancelAnimationFrame(commStoryAnimationReq);
+    isCommStoryPaused = false;
+
+    document.getElementById("storyViewersSheet")?.classList.add("d-none");
+
+    const mediaContainer = document.getElementById("storyViewerMediaContainer");
+    if (mediaContainer) {
+        const vid = mediaContainer.querySelector("video");
+        if (vid) vid.pause();
+        mediaContainer.innerHTML = "";
+    }
+}
+
+function showCommStoryItem() {
+    clearTimeout(commStoryStepTimer);
+    cancelAnimationFrame(commStoryAnimationReq);
+    isCommStoryPaused = false;
+
+    document.getElementById("storyViewersSheet")?.classList.add("d-none");
+
+    const currentUid = commStoryUserKeys[commCurrentStoryUserIdx];
+    const userStories = commStoriesByUser[currentUid] || [];
+
+    if (commCurrentStoryItemIdx >= userStories.length) {
+        if (commCurrentStoryUserIdx + 1 < commStoryUserKeys.length) {
+            commCurrentStoryUserIdx++;
+            commCurrentStoryItemIdx = 0;
+            showCommStoryItem();
+            return;
+        } else {
+            closeCommStoryViewer();
+            return;
+        }
+    }
+
+    if (commCurrentStoryItemIdx < 0) {
+        if (commCurrentStoryUserIdx > 0) {
+            commCurrentStoryUserIdx--;
+            const prevUserStories = commStoriesByUser[commStoryUserKeys[commCurrentStoryUserIdx]] || [];
+            commCurrentStoryItemIdx = Math.max(0, prevUserStories.length - 1);
+            showCommStoryItem();
+            return;
+        } else {
+            commCurrentStoryItemIdx = 0;
+        }
+    }
+
+    const story = userStories[commCurrentStoryItemIdx];
+    if (!story) {
+        closeCommStoryViewer();
+        return;
+    }
+
+    markCommStoryAsSeen(story.id);
+
+    // ── Free Tier Optimized View Tracking ──
+    if (currentUserId && currentUserId !== story.userId) {
+        if (!commSessionViewedStories.has(story.id)) {
+            commSessionViewedStories.add(story.id);
+            let vName = "URVI Member";
+            let vAvatar = "";
+            try {
+                const udata = JSON.parse(localStorage.getItem("urvi_user_data") || "{}");
+                vName = `${udata.firstName || ""} ${udata.lastName || ""}`.trim() || udata.name || currentUserId;
+                vAvatar = udata.profilePic || "";
+            } catch { /* ignore */ }
+            try {
+                update(ref(db, `stories/${story.id}/views/${currentUserId}`), {
+                    name: vName,
+                    avatar: vAvatar,
+                    time: Date.now()
+                });
+                if (!story.views) story.views = {};
+                story.views[currentUserId] = { name: vName, avatar: vAvatar, time: Date.now() };
+            } catch (e) {
+                console.warn("Story view track error:", e);
+            }
+        }
+    }
+
+    const isOwner = currentUserId && (story.userId === currentUserId);
+
+    // 1. Owner Buttons in Header (New Story & Delete)
+    const btnNew = document.getElementById("btn-story-new");
+    const btnDelete = document.getElementById("btn-story-delete");
+    if (btnNew) btnNew.classList.toggle("d-none", !isOwner);
+    if (btnDelete) btnDelete.classList.toggle("d-none", !isOwner);
+
+    // 2. Views Count (STRICTLY PRIVATE: Only the story owner can see view count and viewers!)
+    const viewersContainer = document.getElementById("storyViewersContainer");
+    const viewsObj = story.views || {};
+    const viewsCount = Object.keys(viewsObj).length;
+    const viewsCountEl = document.getElementById("story-viewers-count");
+    const btnViewers = document.getElementById("btn-story-viewers");
+
+    if (viewersContainer) {
+        // Hidden completely for other users so views stay 100% private
+        viewersContainer.classList.toggle("d-none", !isOwner);
+    }
+    if (viewsCountEl && isOwner) {
+        viewsCountEl.innerText = `${viewsCount} Viewers`;
+    }
+    if (btnViewers && isOwner) {
+        btnViewers.title = "See who viewed this story";
+        btnViewers.classList.add("clickable");
+    }
+
+    // 3. Likes State (STRICTLY FOR COMMUNITY MEMBERS: Hidden on your own story!)
+    const likesContainer = document.getElementById("storyLikesContainer");
+    if (likesContainer) {
+        // When viewing your own story, the like button is completely HIDDEN (Zero option of self-liking!)
+        likesContainer.classList.toggle("d-none", isOwner);
+    }
+
+    if (!isOwner) {
+        const likesObj = story.likes || {};
+        const likesCount = Object.keys(likesObj).length;
+        const isLiked = currentUserId && !!likesObj[currentUserId];
+        const likesCountEl = document.getElementById("story-likes-count");
+        const likeIcon = document.getElementById("story-like-icon");
+        const btnLike = document.getElementById("btn-story-like");
+
+        if (likesCountEl) likesCountEl.innerText = likesCount;
+
+        if (btnLike) {
+            btnLike.classList.add("story-like-btn");
+            btnLike.classList.remove("story-likes-display");
+            btnLike.style.cursor = "pointer";
+            btnLike.title = isLiked ? "Unlike story" : "Like story";
+            btnLike.classList.toggle("liked", isLiked);
+            if (likeIcon) {
+                likeIcon.className = isLiked ? "bi bi-heart-fill text-danger me-1" : "bi bi-heart me-1";
+            }
+        }
+    }
+
+    const avatarEl = document.getElementById("storyViewerAvatar");
+    const usernameEl = document.getElementById("storyViewerUsername");
+    const timeEl = document.getElementById("storyViewerTime");
+    const captionEl = document.getElementById("storyViewerCaption");
+
+    const authorDisplayName = story.username || story.userId || "User";
+    const hasPic = story.userAvatar && story.userAvatar.length > 5 && story.userAvatar !== "default" && !story.userAvatar.includes("logo.png");
+    const fallbackPic = `https://ui-avatars.com/api/?name=${encodeURIComponent(authorDisplayName)}&background=22C55E&color=fff&size=100&bold=true`;
+
+    if (avatarEl) avatarEl.src = hasPic ? story.userAvatar : fallbackPic;
+    if (usernameEl) usernameEl.innerText = authorDisplayName;
+    if (captionEl) captionEl.innerText = story.caption || "";
+
+    if (timeEl && story.createdAt) {
+        const elapsedHrs = Math.floor((Date.now() - story.createdAt) / (1000 * 60 * 60));
+        timeEl.innerText = elapsedHrs > 0 ? `${elapsedHrs}h ago` : "Just now";
+    }
+
+    const progressContainer = document.getElementById("storyProgressSegments");
+    if (progressContainer) {
+        progressContainer.innerHTML = userStories.map((_, idx) => `
+            <div class="story-progress-bar-bg">
+                <div class="story-progress-bar-fill" id="comm-story-progress-fill-${idx}" style="width: ${idx < commCurrentStoryItemIdx ? '100%' : '0%'};"></div>
+            </div>
+        `).join("");
+    }
+
+    const mediaContainer = document.getElementById("storyViewerMediaContainer");
+    if (!mediaContainer) return;
+    mediaContainer.innerHTML = "";
+
+    const currentFill = document.getElementById(`comm-story-progress-fill-${commCurrentStoryItemIdx}`);
+    const isVid = isVideoUrl(story.mediaUrl) || story.mediaType === "video";
+
+    if (isVid) {
+        const video = document.createElement("video");
+        video.src = story.mediaUrl;
+        video.autoplay = true;
+        video.playsInline = true;
+        video.className = "story-viewer-media";
+
+        video.onloadedmetadata = function () {
+            commStoryCurrentDuration = Math.min(30, video.duration || 10) * 1000;
+            commStoryProgressStart = performance.now();
+            runCommStoryProgressAnimation(currentFill, commStoryCurrentDuration);
+        };
+
+        video.onended = function () {
+            advanceCommStory(1);
+        };
+
+        video.onerror = function () {
+            advanceCommStory(1);
+        };
+
+        mediaContainer.appendChild(video);
+    } else {
+        const img = document.createElement("img");
+        img.src = story.mediaUrl;
+        img.className = "story-viewer-media";
+        mediaContainer.appendChild(img);
+
+        commStoryCurrentDuration = 5000;
+        commStoryProgressStart = performance.now();
+        runCommStoryProgressAnimation(currentFill, commStoryCurrentDuration);
+
+        commStoryStepTimer = setTimeout(() => {
+            advanceCommStory(1);
+        }, commStoryCurrentDuration);
+    }
+}
+
+function runCommStoryProgressAnimation(fillEl, duration) {
+    if (!fillEl) return;
+    const start = performance.now();
+
+    function step(now) {
+        if (isCommStoryPaused) return;
+        const elapsed = now - start;
+        const pct = Math.min(100, (elapsed / duration) * 100);
+        fillEl.style.width = `${pct}%`;
+
+        if (elapsed < duration) {
+            commStoryAnimationReq = requestAnimationFrame(step);
+        }
+    }
+
+    commStoryAnimationReq = requestAnimationFrame(step);
+}
+
+function advanceCommStory(direction) {
+    clearTimeout(commStoryStepTimer);
+    cancelAnimationFrame(commStoryAnimationReq);
+
+    commCurrentStoryItemIdx += direction;
+    showCommStoryItem();
+}
+
+function setupCommStoryViewerEvents() {
+    document.getElementById("btn-close-story-viewer")?.addEventListener("click", closeCommStoryViewer);
+
+    document.getElementById("storyTapLeft")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        advanceCommStory(-1);
+    });
+
+    document.getElementById("storyTapRight")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        advanceCommStory(1);
+    });
+
+    // Story Like Button Toggle
+    document.getElementById("btn-story-like")?.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const currentUid = commStoryUserKeys[commCurrentStoryUserIdx];
+        const userStories = commStoriesByUser[currentUid] || [];
+        const currentStory = userStories[commCurrentStoryItemIdx];
+        if (!currentStory) return;
+
+        // You cannot like your own story!
+        if (currentUserId && currentStory.userId === currentUserId) {
+            return;
+        }
+
+        if (!currentUserId) {
+            alert("Please log in to like stories!");
+            window.location.href = "../logins/login.html";
+            return;
+        }
+
+        if (!currentStory.likes) currentStory.likes = {};
+        const wasLiked = !!currentStory.likes[currentUserId];
+
+        try {
+            if (wasLiked) {
+                delete currentStory.likes[currentUserId];
+                await remove(ref(db, `stories/${currentStory.id}/likes/${currentUserId}`));
+            } else {
+                currentStory.likes[currentUserId] = true;
+                await set(ref(db, `stories/${currentStory.id}/likes/${currentUserId}`), true);
+            }
+
+            const count = Object.keys(currentStory.likes).length;
+            const countEl = document.getElementById("story-likes-count");
+            const icon = document.getElementById("story-like-icon");
+            const btn = document.getElementById("btn-story-like");
+            if (countEl) countEl.innerText = count;
+            if (icon) icon.className = !wasLiked ? "bi bi-heart-fill text-danger me-1" : "bi bi-heart me-1";
+            if (btn) btn.classList.toggle("liked", !wasLiked);
+        } catch (err) {
+            console.warn("Like story error:", err);
+        }
+    });
+
+    // Story Owner "New Story" action
+    document.getElementById("btn-story-new")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        closeCommStoryViewer();
+        if (!currentUserId) {
+            alert("Please log in to keep stories on URVI!");
+            window.location.href = "../logins/login.html";
+            return;
+        }
+        if (commUploadStoryModalInstance) commUploadStoryModalInstance.show();
+    });
+
+    // Story Owner "Delete" action
+    document.getElementById("btn-story-delete")?.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const currentUid = commStoryUserKeys[commCurrentStoryUserIdx];
+        const userStories = commStoriesByUser[currentUid] || [];
+        const currentStory = userStories[commCurrentStoryItemIdx];
+        if (!currentStory) return;
+
+        pauseCommStoryTimer();
+        const ok = confirm("Are you sure you want to delete this story?");
+        if (!ok) {
+            resumeCommStoryTimer();
+            return;
+        }
+
+        try {
+            await remove(ref(db, `stories/${currentStory.id}`));
+            userStories.splice(commCurrentStoryItemIdx, 1);
+            if (userStories.length === 0) {
+                closeCommStoryViewer();
+            } else {
+                if (commCurrentStoryItemIdx >= userStories.length) {
+                    commCurrentStoryItemIdx = userStories.length - 1;
+                }
+                showCommStoryItem();
+            }
+            alert("Story deleted 🌿");
+        } catch (err) {
+            alert("Failed to delete story: " + err.message);
+            resumeCommStoryTimer();
+        }
+    });
+
+    // Viewers Sheet click handler
+    document.getElementById("btn-story-viewers")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const currentUid = commStoryUserKeys[commCurrentStoryUserIdx];
+        const userStories = commStoriesByUser[currentUid] || [];
+        const currentStory = userStories[commCurrentStoryItemIdx];
+        if (!currentStory) return;
+
+        if (currentStory.userId !== currentUserId) {
+            return; // Non-owners only see view count number
+        }
+
+        pauseCommStoryTimer();
+        const sheet = document.getElementById("storyViewersSheet");
+        const list = document.getElementById("storyViewersList");
+        const badge = document.getElementById("storyViewersCountBadge");
+        if (!sheet || !list) return;
+
+        const views = currentStory.views || {};
+        const likes = currentStory.likes || {};
+        const totalLikes = Object.keys(likes).length;
+        const viewerEntries = Object.entries(views);
+        if (badge) {
+            badge.innerHTML = `${viewerEntries.length} <span class="ms-2 text-danger"><i class="bi bi-heart-fill me-1"></i>${totalLikes}</span>`;
+        }
+
+        if (viewerEntries.length === 0) {
+            list.innerHTML = `<div class="text-center text-white-50 p-4 small">No views yet. Your story was shared recently 🌿</div>`;
+        } else {
+            viewerEntries.sort((a, b) => (b[1].time || 0) - (a[1].time || 0));
+            list.innerHTML = viewerEntries.map(([uid, v]) => {
+                let relTime = "Recently";
+                if (v.time) {
+                    const diffMin = Math.floor((Date.now() - v.time) / 60000);
+                    if (diffMin < 1) relTime = "Just now";
+                    else if (diffMin < 60) relTime = `${diffMin}m ago`;
+                    else relTime = `${Math.floor(diffMin / 60)}h ago`;
+                }
+                const hasLiked = !!likes[uid];
+                const vName = v.name || uid || 'URVI Member';
+                const vHasPic = v.avatar && v.avatar.length > 5 && v.avatar !== "default" && !v.avatar.includes("logo.png");
+                const vPic = vHasPic ? v.avatar : `https://ui-avatars.com/api/?name=${encodeURIComponent(vName)}&background=22C55E&color=fff&size=100&bold=true`;
+                return `
+                    <div class="story-viewer-user-row">
+                        <div class="d-flex align-items-center gap-2">
+                            <img src="${vPic}" class="rounded-circle" style="width:34px;height:34px;object-fit:cover;">
+                            <div class="text-white small fw-semibold">${vName}</div>
+                            ${hasLiked ? '<span class="badge bg-danger-subtle text-danger ms-1" style="font-size:10px;"><i class="bi bi-heart-fill me-1"></i>Liked</span>' : ''}
+                        </div>
+                        <small class="text-white-50" style="font-size:11px;">${relTime}</small>
+                    </div>
+                `;
+            }).join("");
+        }
+
+        sheet.classList.remove("d-none");
+    });
+
+    // Close Viewers sheet
+    document.getElementById("btn-close-story-viewers-sheet")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const sheet = document.getElementById("storyViewersSheet");
+        if (sheet) sheet.classList.add("d-none");
+        resumeCommStoryTimer();
+    });
+
+    window.addEventListener("keydown", (e) => {
+        const overlay = document.getElementById("storyViewerOverlay");
+        if (!overlay || overlay.classList.contains("d-none")) return;
+        if (e.key === "Escape") closeCommStoryViewer();
+        if (e.key === "ArrowLeft") advanceCommStory(-1);
+        if (e.key === "ArrowRight") advanceCommStory(1);
+    });
+}

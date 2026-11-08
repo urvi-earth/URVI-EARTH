@@ -1,250 +1,660 @@
 /* =====================================================
-   URVI – drawer.js | Unified Navigation, Language Switcher & Full-Size Right Vine
+   URVI – drawer.js | Instagram-Style Mobile Navigation, 
+   Profile Action Sheet, Language Switcher & Desktop Sync
    ===================================================== */
 import { db, ref, get, child } from "../config.js";
 
 const CURRENT_LANG_KEY = "urvi_lang_pref";
 
 document.addEventListener("DOMContentLoaded", () => {
-    initMobileDrawer();
+    initInstagramBottomNav();
+    initProfileMobileMenu();
     initFallbackRoutes();
     syncSidebarProfileBox();
     injectRightVineDecoration();
     ensureTranslatorLoaded();
 });
 
-function initMobileDrawer() {
+/**
+ * 1. INSTAGRAM-STYLE MOBILE BOTTOM NAVIGATION BAR
+ * 5 Slots:
+ *  1. Help / Support (Green icon)
+ *  2. Activities (Green icon)
+ *  3. (Main) Home or Community (Elevated Green Circle, White Icon)
+ *  4. Impact (Green icon)
+ *  5. Profile (Green icon / Avatar)
+ * Strictly visible on mobile view only (hidden on desktop >= 992px)
+ */
+function initInstagramBottomNav() {
+    if (document.getElementById("urvi-instagram-bottom-nav")) return;
+
     const path = window.location.pathname;
+    const isRoot = path.endsWith("index.html") || path.endsWith("/");
+    const basePath = isRoot ? "" : "../";
+
+    const isHelp = false;
+    const isActivities = path.includes("activities");
+    const isCommunity = path.includes("community") || (isRoot && window.innerWidth <= 768);
+    const isImpact = path.includes("impact");
+    const isProfile = (path.includes("profile/profile.html") || path.endsWith("/profile.html")) && !path.includes("user-profile");
+
+    // Dynamic user avatar for slot 5 if cached AND matches active logged-in user
+    let userAvatarUrl = null;
+    const activeUserId = localStorage.getItem("urvi_logged_user");
+    const cachedUserData = localStorage.getItem("urvi_user_data");
+    if (cachedUserData && activeUserId) {
+        try {
+            const u = JSON.parse(cachedUserData);
+            const matchesActive = !u.user_id ||
+                u.user_id.toLowerCase() === activeUserId.toLowerCase() ||
+                (u.auth_uid && u.auth_uid === activeUserId) ||
+                (u.email && u.email.toLowerCase() === activeUserId.toLowerCase()) ||
+                activeUserId.toLowerCase() === "urvi.earth";
+
+            if (matchesActive && u && u.profilePic && u.profilePic.length > 5 && u.profilePic !== "default") {
+                userAvatarUrl = u.profilePic;
+            } else if (!matchesActive) {
+                localStorage.removeItem("urvi_user_data");
+            }
+        } catch (e) { /* ignore */ }
+    }
+
+    const navHtml = `
+        <nav class="urvi-instagram-bottom-nav d-lg-none" id="urvi-instagram-bottom-nav" aria-label="Mobile Navigation">
+            <!-- 1. Help & Support -->
+            <button type="button" class="insta-nav-tab ${isHelp ? 'active' : ''}" id="insta-tab-support" aria-label="Help and Support">
+                <i class="bi bi-headset insta-tab-icon"></i>
+                <span class="insta-tab-label">Support</span>
+            </button>
+
+            <!-- 2. Activities -->
+            <a href="${basePath}activities/activities.html" class="insta-nav-tab ${isActivities ? 'active' : ''}" id="insta-tab-activities" aria-label="Activities">
+                <i class="bi ${isActivities ? 'bi-compass-fill' : 'bi-compass'} insta-tab-icon"></i>
+                <span class="insta-tab-label">Activities</span>
+            </a>
+
+            <!-- 3. (Main) Home / Community - Elevated Green Background, White Icon -->
+            <a href="${basePath}community/community.html" class="insta-nav-tab insta-nav-tab-main ${isCommunity ? 'active' : ''}" id="insta-tab-home" aria-label="Community Feed">
+                <div class="insta-main-circle">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+                <span class="insta-tab-label insta-main-label">Community</span>
+            </a>
+
+            <!-- 4. Impact -->
+            <a href="${basePath}impact/impact.html" class="insta-nav-tab ${isImpact ? 'active' : ''}" id="insta-tab-impact" aria-label="Impact">
+                <i class="bi ${isImpact ? 'bi-bullseye' : 'bi-bullseye'} insta-tab-icon"></i>
+                <span class="insta-tab-label">Impact</span>
+            </a>
+
+            <!-- 5. Profile -->
+            <a href="${basePath}profile/profile.html" class="insta-nav-tab ${isProfile ? 'active' : ''}" id="insta-tab-profile" aria-label="Profile">
+                ${userAvatarUrl 
+                    ? `<img src="${userAvatarUrl}" class="insta-tab-avatar ${isProfile ? 'active-avatar' : ''}" alt="Profile">`
+                    : `<i class="bi ${isProfile ? 'bi-person-circle' : 'bi-person'} insta-tab-icon"></i>`
+                }
+                <span class="insta-tab-label">Profile</span>
+            </a>
+        </nav>
+    `;
+
+    document.body.insertAdjacentHTML("beforeend", navHtml);
+
+    // Support trigger
+    document.getElementById("insta-tab-support")?.addEventListener("click", (e) => {
+        e.preventDefault();
+        if (typeof window.openUrviSupportModal === "function") {
+            window.openUrviSupportModal();
+        } else {
+            const supportLink = document.querySelector('a[onclick*="openUrviSupportModal"]');
+            if (supportLink) supportLink.click();
+            else alert("Help & Support: Please reach out to support@urvi.earth");
+        }
+    });
+
+    // Inject Navigation & Action Sheet Styles
+    injectInstagramNavStyles();
+}
+
+/**
+ * 2. PROFILE SECTION MOBILE MENU (Top Right ☰ Menu Button & Slide-up Sheet)
+ * On mobile view on profile.html, this adds the top-right menu button and 
+ * an Instagram-style slide-up action sheet with "My Certificates" and "My Virtual Tree".
+ */
+function initProfileMobileMenu() {
+    const path = window.location.pathname;
+    const isProfilePage = path.includes("profile/profile.html") || path.endsWith("/profile.html");
+    if (!isProfilePage) return;
+
     const isRoot = path.endsWith("index.html") || path.endsWith("/");
     const basePath = isRoot ? "" : "../";
     const currentLang = localStorage.getItem(CURRENT_LANG_KEY) || "en";
 
-    // Inject Mobile Drawer HTML structure into document body if not present
-    if (!document.getElementById("urvi-mobile-drawer")) {
-        const drawerHtml = `
-            <div id="urvi-drawer-overlay" class="drawer-overlay"></div>
-            <aside id="urvi-mobile-drawer" class="mobile-drawer-aside">
-                <div class="drawer-header">
-                    <div class="d-flex align-items-center gap-2">
-                        <img src="${basePath}assets/logo.png" style="width:36px;height:36px;object-fit:contain;" alt="URVI">
-                        <div>
-                            <h5 class="m-0 fw-bold" style="color:var(--forest-green, #14532D); font-size:16px;">URVI</h5>
-                            <small style="font-size:10px; color:#64748B;">Connect • Care • Conserve</small>
+    // 1. Inject Instagram-Style Profile Action Sheet
+    if (!document.getElementById("urvi-profile-sheet-overlay")) {
+        const sheetHtml = `
+            <div id="urvi-profile-sheet-overlay" class="profile-sheet-overlay"></div>
+            <div id="urvi-profile-action-sheet" class="profile-action-sheet" role="dialog" aria-modal="true" aria-label="Profile Options">
+                <div class="sheet-drag-handle"></div>
+                <div class="sheet-header">
+                    <h6 class="sheet-title m-0 fw-bold">Menu & Settings</h6>
+                    <button type="button" id="profile-sheet-close-btn" class="sheet-close-btn" aria-label="Close menu">&times;</button>
+                </div>
+                <div class="sheet-menu-list">
+                    <!-- 1. Settings > Edit Profile or Change Password -->
+                    <div class="sheet-menu-item" id="sheet-open-settings-btn" style="cursor:pointer;">
+                        <div class="sheet-icon-wrap" style="background:#F0FDF4; color:#16A34A;">
+                            <i class="bi bi-gear-fill"></i>
                         </div>
+                        <div class="sheet-item-text">
+                            <span class="sheet-item-title">Settings & Security</span>
+                            <small class="sheet-item-desc">Edit profile details, change password & privacy</small>
+                        </div>
+                        <i class="bi bi-chevron-right sheet-arrow"></i>
                     </div>
-                    <button type="button" id="drawer-close-btn" class="drawer-close-btn">&times;</button>
-                </div>
 
-                <nav class="drawer-nav flex-grow-1">
-                    <a href="${basePath}index.html" class="drawer-link ${path.endsWith('index.html') || path.endsWith('/') ? 'active' : ''}"><i class="bi bi-house-fill"></i> Home</a>
-                    <a href="${basePath}activities/activities.html" class="drawer-link ${path.includes('activities') ? 'active' : ''}"><i class="bi bi-bar-chart-line-fill"></i> Activities</a>
-                    <a href="${basePath}impact/impact.html" class="drawer-link ${path.includes('impact') ? 'active' : ''}"><i class="bi bi-bullseye"></i> Impact</a>
-                    <a href="${basePath}community/community.html" class="drawer-link ${path.includes('community') ? 'active' : ''}"><i class="bi bi-people-fill"></i> Community</a>
-                    <a href="${basePath}profile/profile.html" class="drawer-link ${path.endsWith('profile.html') ? 'active' : ''}"><i class="bi bi-person-circle"></i> Profile</a>
-                    <a href="${basePath}profile/mycertificates.html" class="drawer-link drawer-sub-link ${path.includes('certificates') ? 'active' : ''}" style="color:#16A34A; font-weight:600;"><i class="bi bi-award-fill"></i> My Certificates</a>
-                    <a href="${basePath}profile/my-virtual-tree.html" class="drawer-link drawer-sub-link ${path.includes('virtual-tree') ? 'active' : ''}" style="color:#16A34A; font-weight:600;"><i class="bi bi-tree-fill"></i> My Virtual Tree</a>
-                    <a href="${basePath}notifications/notifications.html" class="drawer-link ${path.includes('notifications') ? 'active' : ''}"><i class="bi bi-bell-fill"></i> Notifications</a>
-                    <a href="#" class="drawer-link" onclick="if(window.openUrviSupportModal) window.openUrviSupportModal(); return false;"><i class="bi bi-headset"></i> Help & Support</a>
-                    <a href="#" class="drawer-link pwa-install-btn" style="color:#22C55E; font-weight:600;"><i class="bi bi-download"></i> Install App</a>
+                    <!-- 2. My Certificates -->
+                    <a href="${basePath}profile/mycertificates.html" class="sheet-menu-item">
+                        <div class="sheet-icon-wrap" style="background:#ECFDF5; color:#10B981;">
+                            <i class="bi bi-award-fill"></i>
+                        </div>
+                        <div class="sheet-item-text">
+                            <span class="sheet-item-title">My Certificates</span>
+                            <small class="sheet-item-desc">View verified credentials & achievements</small>
+                        </div>
+                        <i class="bi bi-chevron-right sheet-arrow"></i>
+                    </a>
 
-                    <!-- Language Switcher in Drawer -->
-                    <div class="px-2 pt-2 pb-1 border-top mt-2">
-                        <button type="button" class="lang-toggle-btn w-100 py-2 rounded-pill border d-flex align-items-center justify-content-center gap-2" id="urvi-lang-toggle-drawer" style="background:#F0FDF4; border-color:#BBF7D0 !important; color:#15803D; font-weight:600; font-size:13px;">
-                            <span>🌐</span>
-                            <span class="lang-opt ${currentLang === 'en' ? 'active' : ''}" id="drawer-lang-opt-en">EN</span>
-                            <span class="lang-divider text-muted">|</span>
-                            <span class="lang-opt ${currentLang === 'te' ? 'active' : ''}" id="drawer-lang-opt-te">తెలుగు</span>
-                        </button>
+                    <!-- 3. My Virtual Tree -->
+                    <a href="${basePath}profile/my-virtual-tree.html" class="sheet-menu-item">
+                        <div class="sheet-icon-wrap" style="background:#F0FDF4; color:#16A34A;">
+                            <i class="bi bi-tree-fill"></i>
+                        </div>
+                        <div class="sheet-item-text">
+                            <span class="sheet-item-title">My Virtual Tree</span>
+                            <small class="sheet-item-desc">Track real-time XP, level & foliage growth</small>
+                        </div>
+                        <i class="bi bi-chevron-right sheet-arrow"></i>
+                    </a>
+
+                    <!-- 4. Language Switcher in Sheet -->
+                    <div class="sheet-menu-item" id="sheet-lang-toggle-btn" style="cursor:pointer;">
+                        <div class="sheet-icon-wrap" style="background:#FEF3C7; color:#D97706;">
+                            <i class="bi bi-translate"></i>
+                        </div>
+                        <div class="sheet-item-text flex-grow-1">
+                            <span class="sheet-item-title">Language / భాష</span>
+                            <small class="sheet-item-desc">${currentLang === 'en' ? 'English (Switch to తెలుగు)' : 'తెలుగు (Switch to EN)'}</small>
+                        </div>
+                        <span class="badge bg-light text-dark border px-2 py-1 fw-bold" style="font-size:11px;">
+                            ${currentLang === 'en' ? 'EN' : 'తెలుగు'}
+                        </span>
                     </div>
-                </nav>
 
-                <div class="p-3 border-top">
-                    <div id="mobile-drawer-profile-container"></div>
+                    <div class="sheet-menu-divider"></div>
+
+                    <!-- 5. Logout -->
+                    <button type="button" class="sheet-menu-item sheet-logout-item w-100 text-start" id="sheet-logout-btn">
+                        <div class="sheet-icon-wrap" style="background:#FEE2E2; color:#EF4444;">
+                            <i class="bi bi-box-arrow-right"></i>
+                        </div>
+                        <div class="sheet-item-text">
+                            <span class="sheet-item-title text-danger">Logout</span>
+                            <small class="sheet-item-desc">Sign out of this device</small>
+                        </div>
+                    </button>
                 </div>
-            </aside>
+            </div>
         `;
-        document.body.insertAdjacentHTML("beforeend", drawerHtml);
+        document.body.insertAdjacentHTML("beforeend", sheetHtml);
     }
 
-    // Add styles dynamically
-    if (!document.getElementById("drawer-style-block")) {
-        const style = document.createElement("style");
-        style.id = "drawer-style-block";
-        style.textContent = `
-            .bottom-nav, #bottom-nav {
+    const overlay = document.getElementById("urvi-profile-sheet-overlay");
+    const sheet = document.getElementById("urvi-profile-action-sheet");
+    const closeBtn = document.getElementById("profile-sheet-close-btn");
+
+    function openSheet() {
+        document.body.classList.add("sheet-open");
+        overlay?.classList.add("active");
+        sheet?.classList.add("active");
+    }
+
+    function closeSheet() {
+        document.body.classList.remove("sheet-open");
+        overlay?.classList.remove("active");
+        sheet?.classList.remove("active");
+    }
+
+    window.openUrviProfileMenu = openSheet;
+    window.closeUrviProfileMenu = closeSheet;
+
+    overlay?.addEventListener("click", closeSheet);
+    closeBtn?.addEventListener("click", closeSheet);
+
+    // Open Settings & Security Dialog Modal
+    document.getElementById("sheet-open-settings-btn")?.addEventListener("click", () => {
+        closeSheet();
+        const modalEl = document.getElementById("profileSettingsModal");
+        if (modalEl && window.bootstrap) {
+            const modal = window.bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+        } else if (typeof window.openProfileSettingsDialog === "function") {
+            window.openProfileSettingsDialog();
+        }
+    });
+
+    document.getElementById("sheet-lang-toggle-btn")?.addEventListener("click", toggleLanguageState);
+
+    document.getElementById("sheet-logout-btn")?.addEventListener("click", () => {
+        if (confirm("Are you sure you want to log out of URVI?")) {
+            localStorage.removeItem("urvi_logged_user");
+            localStorage.removeItem("urvi_user_data");
+            window.location.href = `${basePath}logins/login.html`;
+        }
+    });
+
+    // 2. Attach Top-Right Menu Button in Profile Header
+    attachProfileTopRightMenuBtn(openSheet);
+}
+
+function attachProfileTopRightMenuBtn(openSheetFn) {
+    let btn = document.getElementById("btn-profile-mobile-menu");
+    if (!btn) {
+        const notifWrapper = document.querySelector(".profile-wrapper .notification-wrapper");
+        const headerParent = notifWrapper?.parentElement || document.querySelector(".profile-wrapper > .d-flex") || document.querySelector(".profile-wrapper");
+
+        btn = document.createElement("button");
+        btn.type = "button";
+        btn.id = "btn-profile-mobile-menu";
+        btn.className = "insta-profile-menu-btn";
+        btn.setAttribute("aria-label", "Profile Menu");
+        btn.setAttribute("title", "Options");
+        btn.innerHTML = `<i class="bi bi-list"></i>`;
+
+        if (notifWrapper && notifWrapper.parentElement) {
+            notifWrapper.parentElement.appendChild(btn);
+        } else if (headerParent) {
+            headerParent.appendChild(btn);
+        }
+    }
+    btn.onclick = openSheetFn;
+}
+
+/**
+ * 3. STYLES: Instagram Bottom Navigation & Slide-Up Sheet
+ */
+function injectInstagramNavStyles() {
+    if (document.getElementById("urvi-insta-nav-styles")) return;
+
+    const style = document.createElement("style");
+    style.id = "urvi-insta-nav-styles";
+    style.textContent = `
+        /* Hide old drawer hamburger button & old bottom nav */
+        .mobile-hamburger-btn { display: none !important; }
+        .bottom-nav, #bottom-nav { display: none !important; }
+
+        /* =====================================================
+           INSTAGRAM MOBILE BOTTOM NAVIGATION BAR
+           White background, Green icons, Raised Green Center Button
+           ===================================================== */
+        .urvi-instagram-bottom-nav {
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            height: 62px !important;
+            background: #FFFFFF !important;
+            border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05) !important;
+            display: flex !important;
+            justify-content: space-around !important;
+            align-items: center !important;
+            z-index: 10000 !important;
+            padding: 0 4px !important;
+            padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+        }
+
+        /* Desktop view: Completely hidden */
+        @media (min-width: 992px) {
+            .urvi-instagram-bottom-nav {
                 display: none !important;
             }
-            .drawer-overlay {
-                position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99998;
-                opacity: 0; visibility: hidden; transition: all 0.3s ease;
-            }
-            .drawer-overlay.active { opacity: 1; visibility: visible; }
+        }
 
-            .mobile-drawer-aside {
-                position: fixed; top: 0; left: 0; bottom: 0; width: 280px; background: #ffffff;
-                z-index: 99999; transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                display: flex; flex-direction: column; box-shadow: 4px 0 25px rgba(0,0,0,0.12);
+        /* Add safe bottom padding to page container so nothing is hidden */
+        @media (max-width: 991.98px) {
+            body {
+                padding-bottom: 72px !important;
             }
-            .mobile-drawer-aside.active { transform: translateX(0); }
+            .community-container, .main-content, .profile-wrapper, .dashboard-container {
+                padding-bottom: 80px !important;
+            }
+        }
 
-            .drawer-header {
-                padding: 18px 20px; border-bottom: 1px solid #F1F5F9;
-                display: flex; align-items: center; justify-content: space-between;
-            }
-            .drawer-close-btn {
-                background: none; border: none; font-size: 24px; color: #64748B; cursor: pointer;
-            }
-            .drawer-nav { padding: 16px 12px; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
-            .drawer-link {
-                display: flex; align-items: center; gap: 12px; padding: 12px 16px;
-                color: #334155; font-weight: 500; font-size: 14px; text-decoration: none;
-                border-radius: 12px; transition: all 0.2s ease;
-            }
-            .drawer-link:hover, .drawer-link.active {
-                background: #F0FDF4; color: #16A34A; font-weight: 600;
-            }
-            .drawer-sub-group { display: flex; flex-direction: column; gap: 2px; }
-            .drawer-sub-link { padding-left: 42px; font-size: 13px; color: #16A34A; }
+        /* Nav Tabs */
+        .insta-nav-tab {
+            flex: 1 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            text-decoration: none !important;
+            background: transparent !important;
+            border: none !important;
+            padding: 4px 0 !important;
+            cursor: pointer !important;
+            position: relative !important;
+            transition: transform 0.15s ease !important;
+            -webkit-tap-highlight-color: transparent !important;
+        }
 
-            .mobile-hamburger-btn {
-                background: linear-gradient(135deg, #16A34A 0%, #15803D 100%) !important;
-                border: none !important;
-                border-radius: 12px !important;
-                width: 38px !important;
-                height: 38px !important;
-                display: inline-flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-                font-size: 20px !important;
-                color: #FFFFFF !important;
-                cursor: pointer !important;
-                box-shadow: 0 4px 14px rgba(22, 163, 74, 0.35) !important;
-                transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease !important;
-                flex-shrink: 0 !important;
-                margin-right: 10px !important;
-            }
-            .mobile-hamburger-btn:hover {
-                transform: translateY(-1px) scale(1.05) !important;
-                box-shadow: 0 6px 18px rgba(22, 163, 74, 0.5) !important;
-                background: linear-gradient(135deg, #22C55E 0%, #16A34A 100%) !important;
-                color: #FFFFFF !important;
-            }
-            .mobile-hamburger-btn:active {
-                transform: scale(0.94) !important;
-            }
-            html, body {
-                overflow-x: clip !important;
-            }
-            /* Sticky Top App Bar */
-            .top-app-bar, header.top-app-bar {
-                position: sticky !important;
-                top: 0px !important;
-                z-index: 1020 !important;
-                background: rgba(255, 255, 255, 0.95) !important;
-                backdrop-filter: blur(14px) !important;
-                -webkit-backdrop-filter: blur(14px) !important;
-                box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05) !important;
-                padding: 10px 14px !important;
-                border-radius: 16px !important;
-                margin-bottom: 20px !important;
-            }
-            [data-theme="dark"] .top-app-bar {
-                background: rgba(15, 23, 42, 0.94) !important;
-                box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25) !important;
-            }
+        .insta-nav-tab:active {
+            transform: scale(0.92) !important;
+        }
 
-            /* Responsive Top Right Profile Pill & Mobile Header Optimization */
-            @media (max-width: 991.98px) {
-                .page-title-desktop { display: none !important; }
-                .top-app-bar > .d-flex:last-child {
-                    gap: 8px !important;
-                }
-                .header-user-pill {
-                    padding: 4px 6px 4px 10px !important;
-                    gap: 6px !important;
-                    max-width: 155px !important;
-                    flex-shrink: 0 !important;
-                }
-                .header-user-name {
-                    max-width: 75px !important;
-                    white-space: nowrap !important;
-                    overflow: hidden !important;
-                    text-overflow: ellipsis !important;
-                    font-size: 0.78rem !important;
-                }
-                .header-user-points {
-                    font-size: 0.65rem !important;
-                    white-space: nowrap !important;
-                }
-                .notification-wrapper .notification-btn {
-                    padding: 4px !important;
-                    font-size: 18px !important;
-                }
-            }
-            @media (max-width: 420px) {
-                .header-user-pill {
-                    max-width: 135px !important;
-                    padding: 3px 5px 3px 8px !important;
-                }
-                .header-user-name {
-                    max-width: 58px !important;
-                }
-            }
+        /* Default Inactive Tab: Clean Muted Gray (#64748B) */
+        .insta-tab-icon {
+            font-size: 21px !important;
+            color: #64748B !important;
+            line-height: 1 !important;
+            display: block !important;
+            transition: color 0.2s ease, transform 0.2s ease !important;
+        }
 
-            @media (min-width: 992px) {
-                .mobile-hamburger-btn { display: none !important; }
-            }
+        .insta-tab-label {
+            font-size: 9.5px !important;
+            font-weight: 500 !important;
+            color: #64748B !important;
+            margin-top: 3px !important;
+            line-height: 1 !important;
+            letter-spacing: -0.2px !important;
+            transition: color 0.2s ease, font-weight 0.2s ease !important;
+        }
 
-            /* Full size right vine matching index.html */
-            .vine-decoration {
-                position: fixed !important;
-                right: 0 !important;
-                top: 0 !important;
-                width: 170px !important;
-                height: 100vh !important;
-                pointer-events: none !important;
-                z-index: 0 !important;
-                overflow: hidden !important;
-            }
-            .vine-svg {
-                width: 100% !important;
-                height: 100% !important;
-                opacity: 0.88 !important;
-            }
-            @media (max-width: 991.98px) {
-                .vine-decoration { display: none !important; }
-            }
-        `;
-        document.head.appendChild(style);
-    }
+        /* Active Tab: Vibrant URVI Green (#16A34A), Bold Label, No Dot! */
+        .insta-nav-tab.active .insta-tab-icon {
+            color: #16A34A !important;
+            transform: scale(1.1) !important;
+        }
 
-    const overlay = document.getElementById("urvi-drawer-overlay");
-    const drawer = document.getElementById("urvi-mobile-drawer");
-    const closeBtn = document.getElementById("drawer-close-btn");
+        .insta-nav-tab.active .insta-tab-label {
+            color: #16A34A !important;
+            font-weight: 700 !important;
+        }
 
-    function openDrawer() {
-        document.body.classList.add("drawer-open");
-        overlay.classList.add("active");
-        drawer.classList.add("active");
-    }
-    function closeDrawer() {
-        document.body.classList.remove("drawer-open");
-        overlay.classList.remove("active");
-        drawer.classList.remove("active");
-    }
+        /* Completely Remove the Green Indicator Dot */
+        .insta-nav-tab.active::after,
+        .insta-nav-tab::after {
+            display: none !important;
+            content: none !important;
+        }
 
-    overlay?.addEventListener("click", closeDrawer);
-    closeBtn?.addEventListener("click", closeDrawer);
+        /* Profile Mini Avatar */
+        .insta-tab-avatar {
+            width: 24px !important;
+            height: 24px !important;
+            border-radius: 50% !important;
+            object-fit: cover !important;
+            border: 1.5px solid #CBD5E1 !important;
+            display: block !important;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease !important;
+        }
 
-    attachHamburgerButton(openDrawer);
+        .insta-nav-tab.active .insta-tab-avatar,
+        .insta-tab-avatar.active-avatar {
+            border: 2px solid #16A34A !important;
+            box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.25) !important;
+            transform: scale(1.08) !important;
+        }
 
-    document.getElementById("urvi-lang-toggle-drawer")?.addEventListener("click", toggleLanguageState);
+        /* 3. CENTER MAIN TAB (Home / Community)
+           Elevated button: Gray when inactive, Vibrant Green gradient when active */
+        .insta-nav-tab-main {
+            position: relative !important;
+            top: -12px !important;
+        }
 
-    // Sync theme button labels after drawer is created
-    if (window.urviSyncThemeButtons) {
-        const t = localStorage.getItem("urvi_theme") || "light";
-        window.urviSyncThemeButtons(t);
-    }
+        .insta-main-circle {
+            width: 48px !important;
+            height: 48px !important;
+            border-radius: 50% !important;
+            background: #F1F5F9 !important;
+            border: 3.5px solid #FFFFFF !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            color: #64748B !important;
+            font-size: 22px !important;
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+        }
+
+        .insta-nav-tab-main:hover .insta-main-circle,
+        .insta-nav-tab-main.active .insta-main-circle {
+            background: linear-gradient(135deg, #22C55E 0%, #16A34A 100%) !important;
+            color: #FFFFFF !important;
+            transform: scale(1.08) !important;
+            box-shadow: 0 8px 22px rgba(22, 163, 74, 0.55) !important;
+        }
+
+        .insta-nav-tab-main.active::after {
+            display: none !important;
+        }
+
+        .insta-main-label {
+            margin-top: 1px !important;
+            font-weight: 500 !important;
+            color: #64748B !important;
+        }
+
+        .insta-nav-tab-main.active .insta-main-label {
+            color: #16A34A !important;
+            font-weight: 700 !important;
+        }
+
+        /* =====================================================
+           PROFILE TOP-RIGHT MENU BUTTON & ACTION SHEET
+           ===================================================== */
+        .insta-profile-menu-btn {
+            font-size: 26px !important;
+            color: #16A34A !important;
+            line-height: 1 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            cursor: pointer !important;
+            margin-left: 10px !important;
+            padding: 4px !important;
+            transition: transform 0.2s ease !important;
+        }
+
+        .insta-profile-menu-btn:active {
+            transform: scale(0.9) !important;
+        }
+
+        .profile-sheet-overlay {
+            position: fixed; inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            backdrop-filter: blur(4px);
+            z-index: 10001;
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .profile-sheet-overlay.active {
+            opacity: 1; visibility: visible;
+        }
+
+        .profile-action-sheet {
+            position: fixed !important;
+            top: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 310px !important;
+            max-width: 86vw !important;
+            height: 100vh !important;
+            background: #FFFFFF !important;
+            border-radius: 24px 0 0 24px !important;
+            z-index: 10002 !important;
+            padding: 24px 18px !important;
+            box-shadow: -10px 0 40px rgba(0, 0, 0, 0.18) !important;
+            transform: translateX(100%) !important;
+            transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1) !important;
+            overflow-y: auto !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+
+        .profile-action-sheet.active {
+            transform: translateX(0) !important;
+        }
+
+        .sheet-drag-handle {
+            display: none !important;
+        }
+
+        .sheet-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #F1F5F9;
+        }
+
+        .sheet-title {
+            color: #0F172A;
+            font-size: 16px;
+            letter-spacing: -0.2px;
+        }
+
+        .sheet-close-btn {
+            background: #F1F5F9;
+            border: none;
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            font-size: 18px;
+            color: #64748B;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+        }
+
+        .sheet-menu-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .sheet-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 14px;
+            border-radius: 16px;
+            text-decoration: none;
+            color: #1E293B;
+            background: transparent;
+            border: none;
+            transition: background 0.2s ease;
+        }
+
+        .sheet-menu-item:hover, .sheet-menu-item:active {
+            background: #F8FAFC;
+        }
+
+        .sheet-icon-wrap {
+            width: 40px; height: 40px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .sheet-item-text {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .sheet-item-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #0F172A;
+            line-height: 1.3;
+        }
+
+        .sheet-item-desc {
+            font-size: 11px;
+            color: #64748B;
+            line-height: 1.3;
+        }
+
+        .sheet-arrow {
+            font-size: 14px;
+            color: #94A3B8;
+        }
+
+        .sheet-menu-divider {
+            height: 1px;
+            background: #F1F5F9;
+            margin: 8px 0;
+        }
+
+        /* =====================================================
+           DARK MODE SUPPORT
+           ===================================================== */
+        [data-theme="dark"] .urvi-instagram-bottom-nav {
+            background: #0F172A !important;
+            border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3) !important;
+        }
+
+        [data-theme="dark"] .insta-tab-icon {
+            color: #34D399 !important;
+        }
+
+        [data-theme="dark"] .insta-tab-label {
+            color: #34D399 !important;
+        }
+
+        [data-theme="dark"] .insta-main-circle {
+            border-color: #0F172A !important;
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important;
+        }
+
+        [data-theme="dark"] .profile-action-sheet {
+            background: #1E293B !important;
+            box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5) !important;
+        }
+
+        [data-theme="dark"] .sheet-title,
+        [data-theme="dark"] .sheet-item-title {
+            color: #F1F5F9 !important;
+        }
+
+        [data-theme="dark"] .sheet-header,
+        [data-theme="dark"] .sheet-menu-divider {
+            border-color: rgba(255, 255, 255, 0.08) !important;
+        }
+
+        [data-theme="dark"] .sheet-menu-item:hover,
+        [data-theme="dark"] .sheet-menu-item:active {
+            background: rgba(255, 255, 255, 0.05) !important;
+        }
+
+        [data-theme="dark"] .sheet-close-btn {
+            background: rgba(255, 255, 255, 0.08) !important;
+            color: #CBD5E1 !important;
+        }
+
+        [data-theme="dark"] .insta-profile-menu-btn {
+            color: #34D399 !important;
+        }
+    `;
+
+    document.head.appendChild(style);
 }
 
 function toggleLanguageState(e) {
@@ -283,44 +693,14 @@ function ensureTranslatorLoaded() {
     document.head.appendChild(script);
 }
 
-function attachHamburgerButton(openDrawerFn) {
-    if (document.querySelector(".mobile-hamburger-btn")) return;
-
-    let targetParent = document.querySelector(".top-app-bar .d-flex:first-child") ||
-                       document.querySelector(".top-app-bar") ||
-                       document.querySelector("header .d-flex:first-child") ||
-                       document.querySelector("header") ||
-                       document.querySelector(".notif-page-header") ||
-                       document.querySelector(".profile-wrapper > div") ||
-                       document.querySelector(".community-container > div") ||
-                       document.querySelector("main");
-
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "mobile-hamburger-btn d-lg-none";
-    btn.innerHTML = `<i class="bi bi-list"></i>`;
-    btn.setAttribute("aria-label", "Open menu");
-    btn.setAttribute("title", "Menu");
-    btn.addEventListener("click", openDrawerFn);
-
-    if (targetParent) {
-        targetParent.insertBefore(btn, targetParent.firstChild);
-    } else {
-        document.body.appendChild(btn);
-    }
-}
-
-/** Synchronize Logged-in User Box in Desktop Sidebar & Mobile Drawer */
+/** Synchronize Logged-in User Box in Desktop Sidebar */
 async function syncSidebarProfileBox() {
     const activeUserId = localStorage.getItem("urvi_logged_user");
     const desktopBox = document.getElementById("sidebar-profile-box");
-    const mobileBox = document.getElementById("mobile-drawer-profile-container");
 
     const path = window.location.pathname;
     const isRoot = path.endsWith("index.html") || path.endsWith("/");
     const loginUrl = isRoot ? "logins/login.html" : "../logins/login.html";
-
-
 
     if (!activeUserId) {
         const guestHTML = `
@@ -330,20 +710,34 @@ async function syncSidebarProfileBox() {
             </a>
         `;
         if (desktopBox) desktopBox.innerHTML = guestHTML;
-        if (mobileBox) mobileBox.innerHTML = guestHTML;
         return;
     }
 
     let user = null;
     const cachedUserData = localStorage.getItem("urvi_user_data");
     if (cachedUserData) {
-        try { user = JSON.parse(cachedUserData); } catch (e) { /* ignore */ }
+        try {
+            const u = JSON.parse(cachedUserData);
+            const matchesActive = !u.user_id ||
+                u.user_id.toLowerCase() === activeUserId.toLowerCase() ||
+                (u.auth_uid && u.auth_uid === activeUserId) ||
+                (u.email && u.email.toLowerCase() === activeUserId.toLowerCase()) ||
+                activeUserId.toLowerCase() === "urvi.earth";
+            if (matchesActive) {
+                user = u;
+            } else {
+                localStorage.removeItem("urvi_user_data");
+            }
+        } catch (e) { /* ignore */ }
     }
 
     if (!user && db) {
         try {
             const uSnap = await get(child(ref(db), `users/${activeUserId}`));
-            if (uSnap.exists()) user = uSnap.val();
+            if (uSnap.exists()) {
+                user = uSnap.val();
+                try { localStorage.setItem("urvi_user_data", JSON.stringify(user)); } catch { /* ignore */ }
+            }
         } catch (e) { /* ignore */ }
     }
 
@@ -355,6 +749,26 @@ async function syncSidebarProfileBox() {
 
     const pic = user ? user.profilePic : null;
     const initial = fullName.charAt(0).toUpperCase();
+
+    // Dynamically synchronize the bottom navigation profile avatar if available
+    if (pic && pic !== "default" && pic.length > 5) {
+        const tabProfile = document.getElementById("insta-tab-profile");
+        if (tabProfile) {
+            let avatarImg = tabProfile.querySelector(".insta-tab-avatar");
+            if (!avatarImg) {
+                const icon = tabProfile.querySelector(".insta-tab-icon");
+                if (icon) {
+                    avatarImg = document.createElement("img");
+                    avatarImg.className = `insta-tab-avatar ${isProfile ? 'active-avatar' : ''}`;
+                    avatarImg.alt = "Profile";
+                    icon.replaceWith(avatarImg);
+                }
+            }
+            if (avatarImg && avatarImg.src !== pic) {
+                avatarImg.src = pic;
+            }
+        }
+    }
 
     const avatarHTML = pic && pic !== "default" && pic.length > 5
         ? `<img src="${pic}" style="width:38px;height:38px;border-radius:50%;object-fit:cover;" alt="${fullName}">`
@@ -377,7 +791,6 @@ async function syncSidebarProfileBox() {
     `;
 
     if (desktopBox) desktopBox.innerHTML = userBoxHTML;
-    if (mobileBox) mobileBox.innerHTML = userBoxHTML;
 
     document.querySelectorAll(".btn-logout-action").forEach(btn => {
         btn.addEventListener("click", () => {

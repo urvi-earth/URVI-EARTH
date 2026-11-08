@@ -2,10 +2,12 @@
 <html lang="en">
 <head>
     <script src="../components/dark-mode.js"></script>
+    <link rel="stylesheet" href="../components/loader.css">
+    <script src="../components/loader.js"></script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>URVI | Eco Activities & Drives</title>
-    <meta name="description" content="URVI Environmental Activities Workspace - Track and join green drives and campaigns.">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>URVI | Monthly Eco Challenges & Daily Streaks</title>
+    <meta name="description" content="URVI Monthly Environmental Challenges - Maintain daily streaks, upload verified proof, and earn green rewards.">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,45 +25,116 @@
     <!-- Main Theme -->
     <link rel="stylesheet" href="../index/index.css">
     <link rel="stylesheet" href="../components/translator.css">
+
     <style>
         .activities-container {
-            margin-left: 270px; padding: 40px 30px; min-height: 100vh; max-width: 1200px;
+            margin-left: 270px;
+            padding: 36px 30px;
+            min-height: 100vh;
+            max-width: 1200px;
         }
-        .category-filter-btn {
-            background: #F1F5F9; color: #475569; border: none; border-radius: 50px;
-            padding: 8px 18px; font-size: 13px; font-weight: 600; transition: all 0.2s ease; cursor: pointer; flex-shrink: 0;
+
+        .streak-hero-card {
+            background: linear-gradient(135deg, #14532D 0%, #16A34A 50%, #22C55E 100%);
+            border-radius: 24px;
+            padding: 28px;
+            color: #FFFFFF;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 12px 30px rgba(20, 83, 45, 0.2);
         }
-        .category-filter-btn:hover, .category-filter-btn.active {
-            background: #15803D; color: #FFFFFF;
+
+        .streak-stat-pill {
+            background: rgba(255, 255, 255, 0.16);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 16px;
+            padding: 12px 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
-        @media (min-width: 1380px) {
-            .activities-container {
-                max-width: 1180px;
-                padding-right: 40px;
-            }
+
+        .active-challenge-card {
+            background: #FFFFFF;
+            border-radius: 20px;
+            border: 1.5px solid #E2E8F0;
+            padding: 22px;
+            transition: all 0.25s ease;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
         }
+        .active-challenge-card:hover {
+            border-color: #22C55E;
+            box-shadow: 0 10px 28px rgba(34, 197, 94, 0.12);
+        }
+
+        .streak-fire-badge {
+            background: linear-gradient(135deg, #F59E0B, #EF4444);
+            color: #FFFFFF;
+            font-weight: 800;
+            padding: 6px 14px;
+            border-radius: 50px;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+        }
+
+        .available-challenge-card {
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 20px;
+            padding: 22px;
+            transition: all 0.25s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+        }
+        .available-challenge-card:hover {
+            border-color: #10B981;
+            box-shadow: 0 8px 24px rgba(16, 185, 129, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .proof-thumb {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            border-radius: 14px;
+            background: #0F172A;
+        }
+
         @media (max-width: 991.98px) {
             .activities-container {
                 margin-left: 0 !important;
-                padding: 16px !important;
-                padding-bottom: 90px !important;
+                padding: 14px !important;
+                padding-bottom: 120px !important;
                 width: 100% !important;
                 max-width: 100% !important;
             }
-            .greeting-block {
-                padding: 20px 16px !important;
-                border-radius: 20px !important;
+            .streak-hero-card {
+                padding: 18px 16px !important;
+                border-radius: 18px !important;
             }
-            .greeting-block h2 {
+            .streak-hero-card h2 {
+                font-size: 19px !important;
+            }
+            .streak-stat-pill {
+                padding: 8px 10px !important;
+                border-radius: 14px !important;
+                gap: 8px !important;
+            }
+            .streak-stat-pill .fs-3 {
                 font-size: 20px !important;
             }
-            .greeting-block p {
-                font-size: 13px !important;
-            }
-            .category-filter-btn {
-                padding: 6px 14px !important;
-                font-size: 12px !important;
-                white-space: nowrap !important;
+            .streak-stat-pill .fs-5 {
+                font-size: 15px !important;
             }
         }
     </style>
@@ -69,7 +142,7 @@
 <body>
 
 <div class="app-wrapper">
-    <!-- LEFT SIDEBAR -->
+    <!-- LEFT SIDEBAR (Desktop Only) -->
     <aside class="desktop-sidebar d-none d-lg-flex flex-column">
         <div class="d-flex align-items-center mb-5">
             <img src="../assets/logo.png" class="brand-logo-img me-2" alt="URVI Logo" style="width: 44px; height: 44px; max-width: 44px; object-fit: contain;">
@@ -81,8 +154,8 @@
 
         <nav class="sidebar-nav flex-grow-1">
             <a href="../index.html" class="sidebar-link"><i class="bi bi-house-fill"></i> Home</a>
-            <a href="activities.html" class="sidebar-link active"><i class="bi bi-bar-chart-line-fill"></i> Activities</a>
-            <a href="../impact/impact.html" class="sidebar-link"><i class="bi bi-bullseye"></i> Impact</a>
+            <a href="activities.html" class="sidebar-link active"><i class="bi bi-calendar-check-fill"></i> Activities & Streaks</a>
+            <a href="../impact/impact.html" class="sidebar-link"><i class="bi bi-bullseye"></i> Impact & Campaigns</a>
             <a href="../community/community.html" class="sidebar-link"><i class="bi bi-people-fill"></i> Community</a>
             <a href="../profile/profile.html" class="sidebar-link"><i class="bi bi-person-circle"></i> Profile</a>
             <a href="../profile/mycertificates.html" class="sidebar-link ps-4" style="font-size:13px; color:#16A34A;"><i class="bi bi-award-fill"></i> My Certificates</a>
@@ -103,44 +176,153 @@
                 <span class="fw-bold ms-2" style="color:var(--forest-green, #14532D);">URVI</span>
             </div>
             <div class="d-none d-lg-block">
-                <h4 class="fw-bold m-0">Eco Activities & Drives 📊</h4>
+                <h4 class="fw-bold m-0">Monthly Eco Challenges & Streaks 🌿</h4>
             </div>
         </header>
 
         <!-- Banner Block -->
-        <div class="greeting-block mb-4 p-4 rounded-4 text-white" style="background: linear-gradient(135deg, #14532D, #22C55E);">
-            <span class="badge bg-white text-success rounded-pill px-3 py-1 fw-bold mb-2">COMMUNITY DRIVES</span>
-            <h2 class="fw-bold m-0 mb-1">Participate & Make an Impact 🌿</h2>
-            <p class="m-0 opacity-90" style="font-size:14px;">Register for upcoming tree plantation drives, soil cleanup events, and sustainability workshops.</p>
+        <div class="streak-hero-card mb-4 animate-fadeup">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+                <div>
+                    <span class="badge bg-white text-success rounded-pill px-3 py-1 fw-bold mb-2">
+                        <i class="bi bi-calendar-event me-1"></i> <span id="current-month-label">Monthly Challenges</span>
+                    </span>
+                    <h2 class="fw-bold m-0 mb-1">Build Daily Green Habits 🔥</h2>
+                    <p class="m-0 opacity-90 small" style="max-width: 600px;">
+                        Choose 1 to 5 monthly activities. Maintain an independent streak in each by uploading daily photo or video proof. Streaks increment upon Master Admin verification!
+                    </p>
+                </div>
+            </div>
+
+            <!-- Stats Pill Row -->
+            <div class="row g-3">
+                <div class="col-6 col-md-4">
+                    <div class="streak-stat-pill">
+                        <span class="fs-3">🔥</span>
+                        <div>
+                            <div class="fw-bold fs-5 m-0" id="stat-best-streak">0 Days</div>
+                            <small class="opacity-80" style="font-size:11px;">Best Active Streak</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4">
+                    <div class="streak-stat-pill">
+                        <span class="fs-3">🎯</span>
+                        <div>
+                            <div class="fw-bold fs-5 m-0" id="stat-active-challenges">0 / 5</div>
+                            <small class="opacity-80" style="font-size:11px;">Active Challenges</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="streak-stat-pill">
+                        <span class="fs-3">⭐</span>
+                        <div>
+                            <div class="fw-bold fs-5 m-0" id="stat-streak-points">0 pts</div>
+                            <small class="opacity-80" style="font-size:11px;">Earned from Challenges</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- Filter Bar -->
-        <div class="d-flex align-items-center gap-2 mb-4 overflow-x-auto pb-2" id="category-filters-nav">
-            <button type="button" class="category-filter-btn active" data-category="All">All Drives</button>
-            <button type="button" class="category-filter-btn" data-category="Tree Plantation">Tree Plantation</button>
-            <button type="button" class="category-filter-btn" data-category="Soil Cleanup">Soil Cleanup</button>
-            <button type="button" class="category-filter-btn" data-category="Climate Awareness">Climate Awareness</button>
-            <button type="button" class="category-filter-btn" data-category="Volunteer Drive">Volunteer Drive</button>
-        </div>
-
-        <!-- Upcoming Drives Section -->
+        <!-- Section 1: My Active Streaks & Daily Tasks -->
         <section class="mb-5">
-            <h4 class="fw-bold text-dark mb-3">Upcoming Drives & Campaigns</h4>
-            <div class="row g-4" id="events-grid">
-                <!-- Dynamic events loaded here -->
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h4 class="fw-bold text-dark m-0"><i class="bi bi-fire text-danger me-2"></i>My Active Challenges</h4>
+                <span class="badge bg-success-subtle text-success rounded-pill px-3 py-1 fw-semibold small" id="active-challenges-badge">0 Active</span>
+            </div>
+
+            <div class="row g-4" id="active-challenges-container">
+                <!-- Dynamically populated -->
             </div>
         </section>
 
-        <!-- My Joined Activities Section -->
+        <!-- Section 2: Available Monthly Challenges to Join -->
         <section class="mb-5">
-            <h4 class="fw-bold text-dark mb-3">My Registered & Past Joined Activities 📋</h4>
-            <div class="row g-3" id="my-activities-grid">
-                <!-- Dynamic joined activities loaded here -->
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h4 class="fw-bold text-dark m-0"><i class="bi bi-compass text-success me-2"></i>Available Challenges to Start</h4>
+                <small class="text-muted">You can start any of the 5 monthly activities</small>
+            </div>
+
+            <div class="row g-4" id="available-challenges-container">
+                <!-- Dynamically populated -->
+            </div>
+        </section>
+
+        <!-- Section 3: Recent Activity Proof Submissions -->
+        <section class="mb-5" id="history-section" style="display:none;">
+            <h4 class="fw-bold text-dark mb-3"><i class="bi bi-clock-history text-primary me-2"></i>My Upload Proof History</h4>
+            <div class="row g-3" id="user-upload-history-container">
+                <!-- Dynamically populated -->
             </div>
         </section>
     </main>
 </div>
 
+<!-- Upload Daily Proof Modal (Bottom Sheet on Mobile) -->
+<div class="modal fade" id="uploadProofModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
+                <div>
+                    <h5 class="modal-title fw-bold text-dark m-0" id="uploadModalTitle">Upload Daily Task Proof</h5>
+                    <small class="text-muted" id="uploadModalSubtitle">Maintain your daily streak</small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body p-4">
+                <form id="proof-upload-form">
+                    <input type="hidden" id="proof-act-id">
+                    <input type="hidden" id="proof-month-key">
+
+                    <!-- File Picker -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-dark">Select Image or Video (Max 30s) *</label>
+                        <input type="file" class="form-control rounded-3" id="proof-file-input" accept="image/*,video/*" required>
+                    </div>
+
+                    <!-- Media Preview Container -->
+                    <div id="proof-media-preview-box" class="mb-3 d-none text-center">
+                        <!-- Injected dynamic preview -->
+                    </div>
+
+                    <!-- Caption -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-dark">Notes / Caption (Optional)</label>
+                        <textarea class="form-control rounded-3" id="proof-caption" rows="2" placeholder="e.g. Watered the mango sapling in our garden today..."></textarea>
+                    </div>
+
+                    <!-- Optional Geo-Tag Location -->
+                    <div class="p-3 bg-light rounded-3 mb-3 border">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="fw-semibold small text-dark"><i class="bi bi-geo-alt-fill text-danger me-1"></i> Attach GPS Coordinates</div>
+                                <small class="text-muted" style="font-size:11px;">Optional location tag for authentic verification</small>
+                            </div>
+                            <div class="form-check form-switch m-0">
+                                <input class="form-check-input" type="checkbox" id="proof-geotag-toggle">
+                            </div>
+                        </div>
+                        <div id="proof-location-feedback" class="small text-success mt-2 d-none fw-semibold"></div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="progress mb-3 d-none" id="proof-upload-progress-container" style="height: 10px; border-radius: 10px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" id="proof-upload-progress" style="width: 0%;"></div>
+                    </div>
+
+                    <button type="submit" class="btn btn-success w-100 rounded-pill py-2 fw-bold shadow-sm" id="btn-submit-proof">
+                        <i class="bi bi-cloud-arrow-up-fill me-1"></i> Submit Proof for Verification
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script type="module" src="../components/theme-toggle.js"></script>
 <script type="module" src="activities.js"></script>
 <script type="module" src="../components/drawer.js"></script>
@@ -148,5 +330,3 @@
 <script type="module" src="../components/translator.js"></script>
 </body>
 </html>
-
-

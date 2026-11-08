@@ -31,6 +31,48 @@ body {
     margin: 0 auto;
 }
 
+/* ── Top-Right Menu Button ── */
+.insta-profile-menu-btn,
+#btn-profile-mobile-menu {
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    min-height: 38px !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+    border: none !important;
+    color: var(--forest-green, #14532D) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 26px !important;
+    cursor: pointer !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+    transition: all 0.2s ease !important;
+}
+
+.insta-profile-menu-btn:hover,
+#btn-profile-mobile-menu:hover {
+    background: #F0FDF4 !important;
+    color: #16A34A !important;
+    transform: scale(1.08) !important;
+}
+
+.insta-profile-menu-btn:active,
+#btn-profile-mobile-menu:active {
+    transform: scale(0.92) !important;
+}
+
+body.dark-mode .insta-profile-menu-btn,
+body.dark-mode #btn-profile-mobile-menu {
+    color: #4ADE80 !important;
+}
+body.dark-mode .insta-profile-menu-btn:hover,
+body.dark-mode #btn-profile-mobile-menu:hover {
+    background: rgba(34, 197, 94, 0.15) !important;
+}
+
 /* ══════════════════════════════
    PROFILE HERO CARD
 ══════════════════════════════ */
@@ -417,10 +459,18 @@ textarea.form-control-plaintext {
 ══════════════════════════════ */
 .score-cards-row {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 14px;
     margin-bottom: 24px;
     animation: fadeSlideUp 0.7s ease-out;
+}
+
+.profile-card-widget {
+    background: #FFFFFF;
+    border-radius: 20px;
+    padding: 22px;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
 }
 
 .score-card-item {
@@ -487,49 +537,81 @@ textarea.form-control-plaintext {
 }
 
 .my-posts-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 4px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
 }
 
+.my-post-card,
 .my-post-thumb {
-    aspect-ratio: 1/1;
-    border-radius: 12px;
-    overflow: hidden;
-    cursor: pointer;
-    position: relative;
-    background: var(--urvi-light);
+    aspect-ratio: 1 / 1 !important;
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+    cursor: pointer !important;
+    position: relative !important;
+    background: #E2E8F0 !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
 }
 
-.my-post-thumb img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s;
+.my-post-card:hover,
+.my-post-thumb:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    z-index: 2;
 }
 
-.my-post-thumb:hover img {
-    transform: scale(1.06);
+.my-post-card img,
+.my-post-thumb img,
+.my-post-card video,
+.my-post-thumb video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block !important;
 }
 
-.my-post-thumb:hover .post-thumb-overlay {
-    opacity: 1;
+.post-type-badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: rgba(0, 0, 0, 0.65);
+    color: #fff;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    pointer-events: none;
+    backdrop-filter: blur(4px);
+    z-index: 3;
 }
 
 .post-thumb-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(20, 83, 45, 0.5);
+    background: rgba(20, 83, 45, 0.45);
     display: flex;
     align-items: center;
     justify-content: center;
     opacity: 0;
-    transition: opacity 0.3s;
+    transition: opacity 0.25s ease;
+    z-index: 2;
+}
+
+.my-post-card:hover .post-thumb-overlay,
+.my-post-thumb:hover .post-thumb-overlay {
+    opacity: 1;
 }
 
 .post-thumb-overlay i {
     color: #fff;
-    font-size: 24px;
+    font-size: 20px;
 }
 
 .post-thumb-text {
@@ -538,16 +620,15 @@ textarea.form-control-plaintext {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 10px;
+    padding: 8px;
     background: linear-gradient(135deg, #F0FDF4, #DCFCE7);
-}
-
-.post-thumb-text p {
-    font-size: 12px;
-    color: var(--text-mid, #334155);
+    color: #14532D;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.35;
     text-align: center;
-    line-height: 1.4;
-    margin: 0;
+    overflow: hidden;
+    word-break: break-word;
 }
 
 .no-posts-message {
@@ -833,40 +914,73 @@ textarea.form-control-plaintext {
     .main-content {
         margin-left: 0;
         width: 100%;
-        padding: 16px;
-        padding-bottom: 90px;
+        padding: 14px;
+        padding-bottom: 160px !important;
     }
 
     .profile-wrapper {
         width: 100%;
+        max-width: 100%;
+        padding-bottom: 30px;
+    }
+
+    .profile-hero-card {
+        border-radius: 24px;
+        margin-bottom: 16px;
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+    }
+
+    .profile-hero-banner {
+        height: 110px;
     }
 
     .profile-hero-body {
         flex-direction: column;
         align-items: center;
         text-align: center;
-        padding: 0 20px 24px;
-    }
-
-    .profile-info-section {
-        padding-top: 14px;
-    }
-
-    .profile-stats-row {
-        justify-content: center;
-    }
-
-    .profile-hero-banner {
-        height: 120px;
+        padding: 0 16px 20px;
+        margin-top: -48px;
     }
 
     .profile-pic-wrapper {
-        width: 100px;
-        height: 100px;
+        width: 96px;
+        height: 96px;
+        border-width: 4px;
+    }
+
+    .profile-info-section {
+        width: 100%;
+        padding-top: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
     }
 
     .profile-full-name {
         font-size: 20px;
+        margin-bottom: 2px;
+    }
+
+    .profile-user-id {
+        font-size: 13px;
+        margin-bottom: 8px;
+    }
+
+    .profile-stats-row {
+        width: 100%;
+        max-width: 320px;
+        margin: 12px auto;
+        display: flex;
+        justify-content: space-around;
+    }
+
+    .profile-bio-container {
+        width: 100%;
+        max-width: 340px;
+        margin: 6px auto 0;
+        text-align: center;
     }
 
     .profile-details-card {
@@ -874,23 +988,38 @@ textarea.form-control-plaintext {
     }
 
     .score-cards-row {
-        gap: 10px;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px !important;
+        margin-bottom: 16px !important;
     }
 
     .score-card-item {
-        padding: 14px 10px;
+        padding: 10px 8px !important;
+        border-radius: 14px !important;
+        border: 1px solid #E2E8F0 !important;
+        background: #fff !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03) !important;
     }
 
     .score-card-icon {
-        font-size: 22px;
+        font-size: 20px !important;
+        margin-bottom: 2px !important;
     }
 
     .score-card-item strong {
-        font-size: 22px;
+        font-size: 18px !important;
+        line-height: 1.2 !important;
+    }
+
+    .score-card-item small {
+        font-size: 11px !important;
+        white-space: nowrap !important;
     }
 
     .my-posts-grid {
-        gap: 4px;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 4px !important;
     }
 }
 

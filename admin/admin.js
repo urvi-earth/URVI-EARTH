@@ -2,7 +2,7 @@
    URVI – admin.js | Complete Master Admin Control Panel
    ===================================================== */
 import { db, ref, get, child, set, update, remove, push } from "../config.js";
-import { uploadToCloudinary, deleteFromCloudinary, extractPublicIdFromUrl } from "../cloudinary.js";
+import { uploadToCloudinary, deleteFromCloudinary, extractPublicIdFromUrl, isVideoUrl } from "../cloudinary.js";
 import { validateUsername } from "../components/profanity-filter.js";
 
 let currentUserId = null;
@@ -181,7 +181,10 @@ function initAdminDashboard() {
     loadCertificatesTab();
     loadUsersTab();
     loadPostsTab();
-    loadSettingsTab();
+    loadMonthlyActivitiesTab();
+    loadActivityVerificationTab();
+    loadStoryModerationTab();
+    loadGlobalStatsTab();
     loadSupportTab();
     loadDeletionsQueueTab();
     loadAuditLogTab();
@@ -191,6 +194,9 @@ function initAdminDashboard() {
         loadEventsTab();
         loadCertificatesTab();
         loadUsersTab();
+        loadMonthlyActivitiesTab();
+        loadActivityVerificationTab();
+        loadStoryModerationTab();
     });
 }
 
@@ -1372,39 +1378,732 @@ async function loadPostsTab() {
 }
 
 // -----------------------------------------------------------------
-// 5. Leaderboard Visibility Settings
+// 5. Monthly Eco Challenges Publishing (Max 5/month)
 // -----------------------------------------------------------------
-async function loadSettingsTab() {
-    const totalToggle = document.getElementById("toggle-total-lb");
-    const pointsToggle = document.getElementById("toggle-points-lb");
-    const plantsToggle = document.getElementById("toggle-plants-lb");
-    const contribToggle = document.getElementById("toggle-contrib-lb");
-    const saveBtn = document.getElementById("save-settings-btn");
+function getAdminSelectedMonthKey() {
+    const picker = document.getElementById("admin-activity-month-picker");
+    if (picker && picker.value) {
+        return picker.value.replace("-", "_");
+    }
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    return `${y}_${m}`;
+}
+
+let cachedMonthlyActivities = {};
+
+async function loadMonthlyActivitiesTab() {
+    const monthPicker = document.getElementById("admin-activity-month-picker");
+    const now = new Date();
+    const curVal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    if (monthPicker && !monthPicker.value) {
+        monthPicker.value = curVal;
+    }
+
+    monthPicker?.addEventListener("change", () => {
+        renderMonthlyActivitiesList();
+    });
+
+    setupMonthlyActivityForm();
+    await renderMonthlyActivitiesList();
+}
+
+function setupMonthlyActivityForm() {
+    const form = document.getElementById("monthly-activity-form");
+    const editIdInput = document.getElementById("monthly-act-edit-id");
+    const cancelBtn = document.getElementById("monthly-act-cancel-btn");
+    const headerTitle = document.getElementById("monthly-act-form-header");
+    const submitBtn = document.getElementById("monthly-act-submit-btn");
+
+    if (!form || form._isInitialized) return;
+    form._isInitialized = true;
+
+    cancelBtn?.addEventListener("click", () => {
+        resetMonthlyActivityForm();
+    });
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const monthKey = getAdminSelectedMonthKey();
+        const editId = editIdInput.value.trim();
+
+        const title = document.getElementById("monthly-act-title").value.trim();
+        const category = document.getElementById("monthly-act-category").value;
+        const icon = document.getElementById("monthly-act-icon").value.trim() || "🌱";
+        const targetDays = parseInt(document.getElementById("monthly-act-target-days").value, 10) || 30;
+        const pointsPerDay = parseInt(document.getElementById("monthly-act-daily-points").value, 10) || 10;
+        const bonusPoints = parseInt(document.getElementById("monthly-act-bonus-points").value, 10) || 100;
+        const desc = document.getElementById("monthly-act-desc").value.trim();
+
+        if (!title || !desc) {
+            alert("Please fill in both Activity Title and Description.");
+            return;
+        }
+
+        // Enforce max 5 activities per month if creating new
+        if (!editId) {
+            const currentCount = Object.keys(cachedMonthlyActivities).length;
+            if (currentCount >= 5) {
+                alert(`⚠️ Maximum limit reached: You already have 5 activities published for ${monthKey}. Please edit or delete an existing activity first.`);
+                return;
+            }
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Saving...`;
+
+        try {
+            const actData = {
+                title,
+                category,
+                icon,
+                targetDays,
+                pointsPerDay,
+                bonusOnCompletion: bonusPoints,
+                description: desc,
+                status: "active",
+                updatedAt: Date.now()
+            };
+
+            if (editId) {
+                await update(ref(db, `monthly_activities/${monthKey}/activities/${editId}`), actData);
+                await logAdminAction("MONTHLY_ACTIVITY_UPDATE", editId, `Updated monthly challenge '${title}' for ${monthKey}`);
+            } else {
+                actData.createdAt = Date.now();
+                actData.createdBy = currentUserId || "admin";
+                const newRef = push(ref(db, `monthly_activities/${monthKey}/activities`));
+                await set(newRef, actData);
+                await logAdminAction("MONTHLY_ACTIVITY_CREATE", newRef.key, `Published new monthly challenge '${title}' for ${monthKey}`);
+            }
+
+            resetMonthlyActivityForm();
+            await renderMonthlyActivitiesList();
+            alert("Challenge successfully saved and published! 🌿");
+        } catch (err) {
+            console.error("Save monthly activity error:", err);
+            alert("Failed to save challenge: " + err.message);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `<i class="bi bi-cloud-arrow-up-fill me-1"></i> Publish Challenge`;
+        }
+    });
+
+    function resetMonthlyActivityForm() {
+        form.reset();
+        editIdInput.value = "";
+        document.getElementById("monthly-act-target-days").value = "30";
+        document.getElementById("monthly-act-daily-points").value = "10";
+        document.getElementById("monthly-act-bonus-points").value = "100";
+        document.getElementById("monthly-act-icon").value = "🌱";
+        if (headerTitle) headerTitle.innerText = "Publish New Monthly Challenge";
+        if (cancelBtn) cancelBtn.classList.add("d-none");
+    }
+}
+
+async function renderMonthlyActivitiesList() {
+    const listEl = document.getElementById("monthly-activities-list");
+    const countBadge = document.getElementById("monthly-act-count-badge");
+    const navBadge = document.getElementById("nav-monthly-count");
+    if (!listEl) return;
+
+    const monthKey = getAdminSelectedMonthKey();
+    listEl.innerHTML = `<div class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading activities for ${monthKey}...</div>`;
 
     try {
-        const sSnap = await get(child(ref(db), "settings/leaderboard_visibility"));
-        if (sSnap.exists()) {
-            const s = sSnap.val();
-            if (totalToggle) totalToggle.checked = s.total !== false;
-            if (pointsToggle) pointsToggle.checked = s.points !== false;
-            if (plantsToggle) plantsToggle.checked = s.plants !== false;
-            if (contribToggle) contribToggle.checked = s.contributions !== false;
+        const snap = await get(child(ref(db), `monthly_activities/${monthKey}/activities`));
+        if (!snap.exists()) {
+            cachedMonthlyActivities = {};
+            if (countBadge) countBadge.innerText = "0 / 5 Activities";
+            if (navBadge) navBadge.innerText = "0/5";
+            listEl.innerHTML = `
+                <div class="text-center py-4 text-muted">
+                    <p class="m-0">No activities published yet for <strong>${monthKey}</strong>.</p>
+                    <small>Publish up to 5 daily activities for users to choose and maintain streaks.</small>
+                </div>
+            `;
+            return;
         }
-    } catch (e) { console.error(e); }
 
-    saveBtn?.addEventListener("click", async () => {
-        saveBtn.disabled = true;
-        await set(ref(db, "settings/leaderboard_visibility"), {
-            total: totalToggle.checked,
-            points: pointsToggle.checked,
-            plants: plantsToggle.checked,
-            contributions: contribToggle.checked,
-            updatedAt: Date.now()
+        cachedMonthlyActivities = snap.val();
+        const acts = Object.entries(cachedMonthlyActivities).map(([id, data]) => ({ id, ...data }));
+        const count = acts.length;
+
+        if (countBadge) countBadge.innerText = `${count} / 5 Activities`;
+        if (navBadge) navBadge.innerText = `${count}/5`;
+
+        listEl.innerHTML = `
+            <div class="row g-3">
+                ${acts.map(act => `
+                    <div class="col-12 col-md-6">
+                        <div class="monthly-activity-card d-flex flex-column justify-content-between h-100">
+                            <div>
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="fs-4">${act.icon || "🌱"}</span>
+                                        <h6 class="fw-bold m-0 text-dark">${act.title}</h6>
+                                    </div>
+                                    <span class="badge bg-success-subtle text-success rounded-pill px-2 py-1 small">${act.category || "General"}</span>
+                                </div>
+                                <p class="small text-muted mb-3" style="line-height:1.4;">${act.description}</p>
+                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                    <span class="badge bg-light text-dark border">🎯 ${act.targetDays || 30} Days Target</span>
+                                    <span class="badge bg-light text-success border">⭐ +${act.pointsPerDay || 10} pts / day</span>
+                                    <span class="badge bg-light text-primary border">🏆 +${act.bonusOnCompletion || 100} pts bonus</span>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2 pt-2 border-top">
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold btn-edit-monthly-act" data-id="${act.id}">
+                                    <i class="bi bi-pencil me-1"></i> Edit
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-semibold btn-delete-monthly-act" data-id="${act.id}">
+                                    <i class="bi bi-trash3 me-1"></i> Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join("")}
+            </div>
+        `;
+
+        // Wire Edit and Delete buttons
+        listEl.querySelectorAll(".btn-edit-monthly-act").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const id = btn.dataset.id;
+                const act = cachedMonthlyActivities[id];
+                if (!act) return;
+
+                document.getElementById("monthly-act-edit-id").value = id;
+                document.getElementById("monthly-act-title").value = act.title || "";
+                document.getElementById("monthly-act-category").value = act.category || "Tree Plantation";
+                document.getElementById("monthly-act-icon").value = act.icon || "🌱";
+                document.getElementById("monthly-act-target-days").value = act.targetDays || 30;
+                document.getElementById("monthly-act-daily-points").value = act.pointsPerDay || 10;
+                document.getElementById("monthly-act-bonus-points").value = act.bonusOnCompletion || 100;
+                document.getElementById("monthly-act-desc").value = act.description || "";
+
+                document.getElementById("monthly-act-form-header").innerText = "Edit Monthly Challenge";
+                document.getElementById("monthly-act-cancel-btn")?.classList.remove("d-none");
+                document.getElementById("monthly-activity-form")?.scrollIntoView({ behavior: "smooth" });
+            });
         });
-        await logAdminAction("SETTINGS_UPDATE", "leaderboard_visibility", "Updated leaderboard visibility controls.");
-        alert("Leaderboard visibility settings saved!");
-        saveBtn.disabled = false;
-    });
+
+        listEl.querySelectorAll(".btn-delete-monthly-act").forEach(btn => {
+            btn.addEventListener("click", async () => {
+                const id = btn.dataset.id;
+                const act = cachedMonthlyActivities[id];
+                if (!confirm(`Are you sure you want to delete challenge '${act?.title || id}' from ${monthKey}?`)) return;
+
+                try {
+                    await remove(ref(db, `monthly_activities/${monthKey}/activities/${id}`));
+                    await logAdminAction("MONTHLY_ACTIVITY_DELETE", id, `Deleted monthly challenge '${act?.title}' for ${monthKey}`);
+                    await renderMonthlyActivitiesList();
+                } catch (err) {
+                    alert("Delete failed: " + err.message);
+                }
+            });
+        });
+
+    } catch (err) {
+        console.error("Render monthly activities error:", err);
+        listEl.innerHTML = `<div class="alert alert-danger">Error loading monthly activities: ${err.message}</div>`;
+    }
+}
+
+// -----------------------------------------------------------------
+// 6. User Activity Daily Task Verification (Streak Maintenance)
+// -----------------------------------------------------------------
+async function loadActivityVerificationTab() {
+    const queueEl = document.getElementById("admin-verification-queue");
+    const filterSelect = document.getElementById("verify-filter-status");
+    const refreshBtn = document.getElementById("btn-refresh-verifications");
+    if (!queueEl) return;
+
+    refreshBtn?.addEventListener("click", () => renderVerificationQueue());
+    filterSelect?.addEventListener("change", () => renderVerificationQueue());
+
+    await renderVerificationQueue();
+}
+
+async function renderVerificationQueue() {
+    const queueEl = document.getElementById("admin-verification-queue");
+    const filterSelect = document.getElementById("verify-filter-status");
+    const queueBadge = document.getElementById("verif-queue-badge");
+    const navBadge = document.getElementById("nav-pending-verify-count");
+    if (!queueEl) return;
+
+    const filterVal = filterSelect ? filterSelect.value : "pending";
+    if (window.getUrviSpinnerHTML) {
+        queueEl.innerHTML = window.getUrviSpinnerHTML({ text: "Scanning task uploads across all users..." });
+    } else {
+        queueEl.innerHTML = `<div class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Scanning task uploads across all users...</div>`;
+    }
+
+    try {
+        const uactSnap = await get(child(ref(db), "user_activities"));
+        if (!uactSnap.exists()) {
+            if (queueBadge) queueBadge.innerText = "0 Pending";
+            if (navBadge) navBadge.innerText = "0";
+            queueEl.innerHTML = `<div class="text-center py-4 text-muted">No activity task submissions found in database.</div>`;
+            return;
+        }
+
+        const allUacts = uactSnap.val();
+        let tasksList = [];
+
+        // Traverse user_activities/{userId}/{monthKey}/{activityId}/uploads/{uploadId}
+        Object.entries(allUacts).forEach(([userId, monthsObj]) => {
+            if (!monthsObj || typeof monthsObj !== "object") return;
+            Object.entries(monthsObj).forEach(([monthKey, actsObj]) => {
+                if (!actsObj || typeof actsObj !== "object") return;
+                Object.entries(actsObj).forEach(([actId, actData]) => {
+                    if (!actData || typeof actData !== "object" || !actData.uploads) return;
+                    Object.entries(actData.uploads).forEach(([uploadId, uploadData]) => {
+                        tasksList.push({
+                            userId,
+                            user: cachedUsersData[userId] || null,
+                            monthKey,
+                            actId,
+                            actData,
+                            uploadId,
+                            ...uploadData
+                        });
+                    });
+                });
+            });
+        });
+
+        // Count pending
+        const pendingCount = tasksList.filter(t => !t.verified && !t.rejected).length;
+        if (queueBadge) queueBadge.innerText = `${pendingCount} Pending`;
+        if (navBadge) navBadge.innerText = `${pendingCount}`;
+
+        // Apply filter
+        let filteredTasks = tasksList;
+        if (filterVal === "pending") {
+            filteredTasks = tasksList.filter(t => !t.verified && !t.rejected);
+        } else if (filterVal === "verified") {
+            filteredTasks = tasksList.filter(t => t.verified === true);
+        } else if (filterVal === "rejected") {
+            filteredTasks = tasksList.filter(t => t.rejected === true);
+        }
+
+        // Sort newest uploaded first
+        filteredTasks.sort((a, b) => (b.uploadedAt || b.timestamp || 0) - (a.uploadedAt || a.timestamp || 0));
+
+        if (filteredTasks.length === 0) {
+            queueEl.innerHTML = `
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-patch-check fs-1 text-success d-block mb-2"></i>
+                    <h6 class="fw-bold">No tasks matching "${filterVal}"</h6>
+                    <p class="small m-0">All submitted daily streak proofs have been processed!</p>
+                </div>
+            `;
+            return;
+        }
+
+        queueEl.innerHTML = `
+            <div class="row g-3">
+                ${filteredTasks.map(t => {
+                    const userName = t.user ? (t.user.firstName || t.user.name || t.userId) : t.userId;
+                    const userAvatar = t.user?.profilePic && t.user.profilePic.length > 5 ? t.user.profilePic : `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=22C55E&color=fff`;
+                    const isVid = isVideoUrl(t.mediaUrl) || t.mediaType === "video";
+                    const isPending = !t.verified && !t.rejected;
+                    const isVerified = t.verified === true;
+                    const isRejected = t.rejected === true;
+
+                    const mediaMarkup = isVid
+                        ? `<video src="${t.mediaUrl}" controls class="task-media-preview mb-2" style="max-height:240px; border-radius:12px; background:#0F172A;"></video>`
+                        : `<img src="${t.mediaUrl}" alt="Task Proof" class="task-media-preview mb-2" style="max-height:240px; width:100%; object-fit:cover; border-radius:12px;" onerror="this.src='../assets/logo.png'">`;
+
+                    const mapsLink = t.location && t.location.lat
+                        ? `<a href="https://www.google.com/maps?q=${t.location.lat},${t.location.lng}" target="_blank" class="badge bg-primary text-decoration-none py-1 px-2"><i class="bi bi-geo-alt-fill me-1"></i> View GPS Location</a>`
+                        : `<span class="badge bg-secondary-subtle text-secondary py-1 px-2">No GPS Tag</span>`;
+
+                    let statusBadge = `<span class="badge bg-warning text-dark px-3 py-2 rounded-pill"><i class="bi bi-hourglass-split me-1"></i> Pending Verification</span>`;
+                    if (isVerified) statusBadge = `<span class="badge bg-success px-3 py-2 rounded-pill"><i class="bi bi-check-circle me-1"></i> Verified Streak ✓</span>`;
+                    if (isRejected) statusBadge = `<span class="badge bg-danger px-3 py-2 rounded-pill"><i class="bi bi-x-circle me-1"></i> Rejected</span>`;
+
+                    return `
+                        <div class="col-12 col-lg-6">
+                            <div class="verification-task-card p-3 ${isPending ? 'pending' : ''}">
+                                <div class="d-flex align-items-center justify-content-between mb-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <img src="${userAvatar}" class="rounded-circle" style="width:36px; height:36px; object-fit:cover;" alt="${userName}">
+                                        <div>
+                                            <div class="fw-bold small text-dark">${userName}</div>
+                                            <small class="text-muted" style="font-size:11px;">@${t.userId} • ${t.monthKey}</small>
+                                        </div>
+                                    </div>
+                                    ${statusBadge}
+                                </div>
+
+                                <div class="mb-2">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <span class="badge bg-success-subtle text-success fw-bold" style="font-size:12px;">
+                                            ${t.actData.icon || "🌿"} ${t.actData.title || t.actId}
+                                        </span>
+                                        <span class="small text-muted" style="font-size:11px;">Day of: ${t.date || "Today"}</span>
+                                    </div>
+                                </div>
+
+                                ${mediaMarkup}
+
+                                <p class="small text-dark mb-2 fst-italic">"${t.caption || "No caption provided."}"</p>
+
+                                <div class="d-flex align-items-center justify-content-between mb-3">
+                                    ${mapsLink}
+                                    <small class="text-muted" style="font-size:11px;">Uploaded: ${t.uploadedAt ? new Date(t.uploadedAt).toLocaleString() : 'Recent'}</small>
+                                </div>
+
+                                ${isPending ? `
+                                    <div class="d-flex gap-2 pt-2 border-top">
+                                        <button type="button" class="btn btn-success btn-sm rounded-pill flex-fill fw-bold btn-verify-task" 
+                                            data-user="${t.userId}" data-month="${t.monthKey}" data-act="${t.actId}" data-upload="${t.uploadId}" data-title="${t.actData.title || 'Challenge'}">
+                                            <i class="bi bi-check-lg me-1"></i> Verify & Award Streak
+                                        </button>
+                                        <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-bold btn-reject-task" 
+                                            data-user="${t.userId}" data-month="${t.monthKey}" data-act="${t.actId}" data-upload="${t.uploadId}" data-title="${t.actData.title || 'Challenge'}">
+                                            <i class="bi bi-x-lg me-1"></i> Reject
+                                        </button>
+                                    </div>
+                                ` : (isRejected && t.rejectionNote ? `
+                                    <div class="small alert alert-danger py-1 px-2 m-0 mt-2"><strong>Reason:</strong> ${t.rejectionNote}</div>
+                                ` : '')}
+                            </div>
+                        </div>
+                    `;
+                }).join("")}
+            </div>
+        `;
+
+        // Wire Verify and Reject buttons
+        queueEl.querySelectorAll(".btn-verify-task").forEach(btn => {
+            btn.addEventListener("click", async () => {
+                const uid = btn.dataset.user;
+                const mkey = btn.dataset.month;
+                const actId = btn.dataset.act;
+                const upId = btn.dataset.upload;
+                const actTitle = btn.dataset.title;
+
+                btn.disabled = true;
+                btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Verifying...`;
+
+                try {
+                    // 1. Mark upload verified
+                    await update(ref(db, `user_activities/${uid}/${mkey}/${actId}/uploads/${upId}`), {
+                        verified: true,
+                        verifiedAt: Date.now(),
+                        verifiedBy: currentUserId || "admin",
+                        rejected: false
+                    });
+
+                    // 2. Fetch current activity state & increment streak
+                    const actSnap = await get(child(ref(db), `user_activities/${uid}/${mkey}/${actId}`));
+                    const actObj = actSnap.exists() ? actSnap.val() : {};
+                    const newStreak = (actObj.streak || 0) + 1;
+                    const newTotal = (actObj.totalDaysCompleted || 0) + 1;
+                    const highestStreak = Math.max(newStreak, actObj.highestStreak || 0);
+
+                    await update(ref(db, `user_activities/${uid}/${mkey}/${actId}`), {
+                        streak: newStreak,
+                        totalDaysCompleted: newTotal,
+                        highestStreak: highestStreak,
+                        lastUploadDate: new Date().toISOString().split("T")[0]
+                    });
+
+                    // 3. Award points to user profile
+                    const dailyPts = actObj.pointsPerDay || 10;
+                    const uSnap = await get(child(ref(db), `users/${uid}`));
+                    if (uSnap.exists()) {
+                        const uData = uSnap.val();
+                        await update(ref(db, `users/${uid}`), {
+                            points: (uData.points || 0) + dailyPts,
+                            contributions: (uData.contributions || 0) + 1,
+                            currentStreak: Math.max(newStreak, uData.currentStreak || 0)
+                        });
+                    }
+
+                    // 4. Send In-App Notification
+                    const notifRef = push(ref(db, `notifications/${uid}`));
+                    await set(notifRef, {
+                        title: "Daily Task Verified! 🔥",
+                        message: `Your task for '${actTitle}' was verified! Streak is now ${newStreak} days. +${dailyPts} Green Points awarded!`,
+                        type: "activity_verified",
+                        timestamp: Date.now(),
+                        read: false
+                    });
+
+                    await logAdminAction("ACTIVITY_TASK_VERIFY", `${uid}:${actId}:${upId}`, `Verified day task for user '${uid}' in '${actTitle}'. Streak: ${newStreak}`);
+                    await renderVerificationQueue();
+                } catch (err) {
+                    console.error("Verify task error:", err);
+                    alert("Verification error: " + err.message);
+                    btn.disabled = false;
+                    btn.innerHTML = `<i class="bi bi-check-lg me-1"></i> Verify & Award Streak`;
+                }
+            });
+        });
+
+        queueEl.querySelectorAll(".btn-reject-task").forEach(btn => {
+            btn.addEventListener("click", async () => {
+                const uid = btn.dataset.user;
+                const mkey = btn.dataset.month;
+                const actId = btn.dataset.act;
+                const upId = btn.dataset.upload;
+                const actTitle = btn.dataset.title;
+
+                const reason = prompt("Enter a brief reason for rejecting this proof (will be sent to user):", "Photo did not show verified task proof.");
+                if (reason === null) return; // user cancelled
+
+                btn.disabled = true;
+
+                try {
+                    await update(ref(db, `user_activities/${uid}/${mkey}/${actId}/uploads/${upId}`), {
+                        verified: false,
+                        rejected: true,
+                        rejectedAt: Date.now(),
+                        rejectedBy: currentUserId || "admin",
+                        rejectionNote: reason.trim() || "Proof did not meet guidelines."
+                    });
+
+                    // Send notification to user
+                    const notifRef = push(ref(db, `notifications/${uid}`));
+                    await set(notifRef, {
+                        title: "Daily Task Rejected ⚠️",
+                        message: `Your upload for '${actTitle}' was rejected: "${reason.trim()}". Please submit a new valid upload to protect your streak.`,
+                        type: "activity_rejected",
+                        timestamp: Date.now(),
+                        read: false
+                    });
+
+                    await logAdminAction("ACTIVITY_TASK_REJECT", `${uid}:${actId}:${upId}`, `Rejected upload for user '${uid}' in '${actTitle}'. Reason: ${reason}`);
+                    await renderVerificationQueue();
+                } catch (err) {
+                    console.error("Reject task error:", err);
+                    alert("Rejection error: " + err.message);
+                    btn.disabled = false;
+                }
+            });
+        });
+
+    } catch (err) {
+        console.error("Render verification queue error:", err);
+        queueEl.innerHTML = `<div class="alert alert-danger">Error loading task verification queue: ${err.message}</div>`;
+    }
+}
+
+// -----------------------------------------------------------------
+// 7. 24-Hour Stories Moderation & Pruning
+// -----------------------------------------------------------------
+async function loadStoryModerationTab() {
+    const pruneBtn = document.getElementById("btn-prune-expired-stories");
+    pruneBtn?.addEventListener("click", () => pruneExpiredStories());
+    await renderStoriesModerationList();
+}
+
+async function renderStoriesModerationList() {
+    const gridEl = document.getElementById("admin-stories-grid");
+    const countBadge = document.getElementById("stories-live-count-badge");
+    const navBadge = document.getElementById("nav-active-stories-count");
+    if (!gridEl) return;
+
+    if (window.getUrviSpinnerHTML) {
+        gridEl.innerHTML = window.getUrviSpinnerHTML({ text: "Loading active 24-hr stories..." });
+    } else {
+        gridEl.innerHTML = `<div class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading active 24-hr stories...</div>`;
+    }
+
+    try {
+        const snap = await get(child(ref(db), "stories"));
+        if (!snap.exists()) {
+            if (countBadge) countBadge.innerText = "0 Active";
+            if (navBadge) navBadge.innerText = "0";
+            gridEl.innerHTML = `<div class="text-center py-4 text-muted">No active stories found.</div>`;
+            return;
+        }
+
+        const storiesData = snap.val();
+        const now = Date.now();
+        const storiesList = Object.entries(storiesData).map(([id, s]) => ({ id, ...s }));
+
+        const activeStories = storiesList.filter(s => s.expiresAt && s.expiresAt > now);
+        if (countBadge) countBadge.innerText = `${activeStories.length} Active`;
+        if (navBadge) navBadge.innerText = `${activeStories.length}`;
+
+        // Sort newest first
+        storiesList.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+        gridEl.innerHTML = `
+            <div class="row g-3">
+                ${storiesList.map(s => {
+                    const isExpired = s.expiresAt ? now > s.expiresAt : false;
+                    const timeLeftMs = (s.expiresAt || 0) - now;
+                    const hoursLeft = Math.max(0, Math.floor(timeLeftMs / (1000 * 60 * 60)));
+                    const minsLeft = Math.max(0, Math.floor((timeLeftMs % (1000 * 60 * 60)) / (1000 * 60)));
+
+                    const isVid = isVideoUrl(s.mediaUrl) || s.mediaType === "video";
+                    const mediaElement = isVid
+                        ? `<video src="${s.mediaUrl}" controls class="admin-story-thumb"></video>`
+                        : `<img src="${s.mediaUrl}" class="admin-story-thumb" alt="Story" onerror="this.src='../assets/logo.png'">`;
+
+                    return `
+                        <div class="col-12 col-sm-6 col-md-4 col-xl-3">
+                            <div class="admin-story-card ${isExpired ? 'opacity-50' : ''}">
+                                ${mediaElement}
+                                <div class="p-3">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <div class="fw-bold small text-truncate" style="max-width:120px;">@${s.username || s.userId || 'User'}</div>
+                                        ${isExpired 
+                                            ? `<span class="badge bg-secondary">Expired</span>` 
+                                            : `<span class="badge bg-info text-dark">${hoursLeft}h ${minsLeft}m left</span>`}
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2 mb-2" style="font-size:11px;">
+                                        <span class="badge bg-light text-danger border"><i class="bi bi-heart-fill me-1"></i>${Object.keys(s.likes || {}).length}</span>
+                                        <span class="badge bg-light text-primary border"><i class="bi bi-eye-fill me-1"></i>${Object.keys(s.views || {}).length} views</span>
+                                    </div>
+                                    <p class="small text-muted mb-2 text-truncate" style="font-size:11px;">"${s.caption || 'No caption'}"</p>
+                                    <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+                                        <small class="text-muted" style="font-size:10px;">${new Date(s.createdAt || 0).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</small>
+                                        <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 btn-delete-story" data-id="${s.id}">
+                                            <i class="bi bi-trash3 me-1"></i> Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join("")}
+            </div>
+        `;
+
+        // Wire delete buttons
+        gridEl.querySelectorAll(".btn-delete-story").forEach(btn => {
+            btn.addEventListener("click", async () => {
+                const id = btn.dataset.id;
+                const story = storiesData[id];
+                if (!confirm(`Delete story by '@${story?.username || story?.userId || id}'?`)) return;
+
+                btn.disabled = true;
+                try {
+                    await remove(ref(db, `stories/${id}`));
+                    if (story?.mediaUrl) {
+                        const { public_id, resource_type } = extractPublicIdFromUrl(story.mediaUrl);
+                        if (public_id) deleteFromCloudinary(public_id, resource_type);
+                    }
+                    await logAdminAction("STORY_DELETE", id, `Deleted story posted by '${story?.userId}'`);
+                    await renderStoriesModerationList();
+                } catch (err) {
+                    alert("Failed to delete story: " + err.message);
+                    btn.disabled = false;
+                }
+            });
+        });
+
+    } catch (err) {
+        console.error("Render stories error:", err);
+        gridEl.innerHTML = `<div class="alert alert-danger">Error loading stories: ${err.message}</div>`;
+    }
+}
+
+async function pruneExpiredStories() {
+    const pruneBtn = document.getElementById("btn-prune-expired-stories");
+    if (pruneBtn) pruneBtn.disabled = true;
+
+    try {
+        const snap = await get(child(ref(db), "stories"));
+        if (!snap.exists()) {
+            alert("No stories to prune.");
+            if (pruneBtn) pruneBtn.disabled = false;
+            return;
+        }
+
+        const stories = snap.val();
+        const now = Date.now();
+        let deletedCount = 0;
+
+        for (const [id, s] of Object.entries(stories)) {
+            if (s.expiresAt && now > s.expiresAt) {
+                await remove(ref(db, `stories/${id}`));
+                if (s.mediaUrl) {
+                    const { public_id, resource_type } = extractPublicIdFromUrl(s.mediaUrl);
+                    if (public_id) deleteFromCloudinary(public_id, resource_type);
+                }
+                deletedCount++;
+            }
+        }
+
+        alert(`Pruned ${deletedCount} expired stories.`);
+        await renderStoriesModerationList();
+    } catch (err) {
+        alert("Pruning error: " + err.message);
+    } finally {
+        if (pruneBtn) pruneBtn.disabled = false;
+    }
+}
+
+// -----------------------------------------------------------------
+// 8. Global Unified Impact Stats Editor
+// -----------------------------------------------------------------
+async function loadGlobalStatsTab() {
+    const treesInput = document.getElementById("gstat-trees");
+    const volunteersInput = document.getElementById("gstat-volunteers");
+    const campaignsInput = document.getElementById("gstat-campaigns");
+    const pointsInput = document.getElementById("gstat-points");
+    const form = document.getElementById("global-stats-editor-form");
+    const feedback = document.getElementById("gstat-feedback");
+    const submitBtn = document.getElementById("btn-save-global-stats");
+
+    if (!form) return;
+
+    try {
+        const snap = await get(child(ref(db), "global_impact"));
+        if (snap.exists()) {
+            const g = snap.val();
+            if (treesInput) treesInput.value = g.trees || 0;
+            if (volunteersInput) volunteersInput.value = g.volunteers || 0;
+            if (campaignsInput) campaignsInput.value = g.campaigns || 0;
+            if (pointsInput) pointsInput.value = g.points || 0;
+        }
+    } catch (err) {
+        console.error("Fetch global impact error:", err);
+    }
+
+    if (!form._isInitialized) {
+        form._isInitialized = true;
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            if (submitBtn) submitBtn.disabled = true;
+
+            const trees = parseInt(treesInput.value, 10) || 0;
+            const volunteers = parseInt(volunteersInput.value, 10) || 0;
+            const campaigns = parseInt(campaignsInput.value, 10) || 0;
+            const points = parseInt(pointsInput.value, 10) || 0;
+
+            try {
+                await update(ref(db, "global_impact"), {
+                    trees,
+                    volunteers,
+                    campaigns,
+                    points,
+                    updatedAt: Date.now(),
+                    updatedBy: currentUserId || "admin"
+                });
+
+                await logAdminAction("GLOBAL_STATS_UPDATE", "global_impact", `Updated global metrics: ${trees} trees, ${volunteers} vols, ${campaigns} cmps, ${points} pts`);
+
+                if (feedback) {
+                    feedback.classList.remove("d-none");
+                    setTimeout(() => feedback.classList.add("d-none"), 3000);
+                }
+                alert("Global impact metrics successfully saved! 🌍");
+            } catch (err) {
+                alert("Failed to save global stats: " + err.message);
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
+            }
+        });
+    }
 }
 
 // -----------------------------------------------------------------

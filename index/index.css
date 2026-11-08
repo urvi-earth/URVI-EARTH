@@ -40,6 +40,58 @@ html {
   overflow-x: clip;
 }
 
+/* ── Clean Green Eco Scrollbar (Universal) ── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #22C55E rgba(34, 197, 94, 0.08);
+}
+
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(34, 197, 94, 0.05);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #22C55E 0%, #16A34A 100%);
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #15803D;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+body.dark-mode,
+[data-theme="dark"] {
+  scrollbar-color: #16A34A rgba(15, 23, 42, 0.6);
+}
+
+body.dark-mode ::-webkit-scrollbar-track,
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.7);
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb,
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #16A34A 0%, #15803D 100%);
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #22C55E;
+}
+
 body {
   font-family: 'Poppins', sans-serif;
   background: var(--bg-page);
@@ -2194,3 +2246,305 @@ html[data-theme="dark"] body,
 
 
 /* End of URVI Design System */
+
+/* =====================================================
+   REAL-TIME 24-HOUR STORIES & VIEWER COMPONENT
+   ===================================================== */
+.stories-section {
+  width: 100%;
+  position: relative;
+}
+
+.stories-tray-container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  overflow-x: auto;
+  padding: 8px 4px 12px 4px;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE */
+  -webkit-overflow-scrolling: touch;
+}
+.stories-tray-container::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.story-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  width: 72px;
+  text-align: center;
+  user-select: none;
+}
+
+.story-ring {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  padding: 2.5px;
+  background: linear-gradient(135deg, #22C55E 0%, #16A34A 50%, #F59E0B 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.story-item:hover .story-ring {
+  transform: scale(1.06);
+}
+
+.story-ring.seen {
+  background: #CBD5E1;
+}
+
+.story-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #FFFFFF;
+  background: #0F172A;
+}
+
+.story-avatar-initial {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  user-select: none !important;
+  background: linear-gradient(135deg, #22C55E 0%, #15803D 100%);
+  color: #FFFFFF !important;
+}
+
+.story-add-badge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #22C55E;
+  color: #FFFFFF;
+  border: 2px solid #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.story-username {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-dark);
+  margin-top: 5px;
+  max-width: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Fullscreen Story Viewer ── */
+.story-viewer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.94);
+  backdrop-filter: blur(14px);
+  z-index: 9999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.story-viewer-stage {
+  width: 100%;
+  max-width: 440px;
+  height: 100%;
+  max-height: 900px;
+  position: relative;
+  background: #0F172A;
+  border-radius: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+@media (min-width: 768px) {
+  .story-viewer-stage {
+    height: 92vh;
+    border-radius: 24px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+  }
+}
+
+.story-progress-segments {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  gap: 5px;
+  z-index: 10;
+}
+
+.story-progress-bar-bg {
+  flex: 1;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.story-progress-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: #FFFFFF;
+  border-radius: 4px;
+  transition: width 0.1s linear;
+}
+
+.story-viewer-header {
+  position: absolute;
+  top: 26px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 10;
+  color: #FFFFFF;
+}
+
+.story-header-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1.5px solid #22C55E;
+  object-fit: cover;
+}
+
+.story-viewer-media {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000000;
+}
+
+.story-nav-tap-zone {
+  position: absolute;
+  top: 70px;
+  bottom: 80px;
+  z-index: 5;
+}
+.story-nav-left {
+  left: 0;
+  width: 35%;
+}
+.story-nav-right {
+  right: 0;
+  width: 65%;
+}
+
+.story-caption-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 40px 18px 24px 18px;
+  background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.5) 70%, transparent 100%);
+  color: #FFFFFF;
+  z-index: 10;
+}
+
+/* ── Story Action Controls & Like Button ── */
+.story-action-pill {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #FFFFFF;
+  padding: 6px 14px;
+  border-radius: 50px;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.story-action-pill:hover {
+  background: rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.story-action-pill.clickable {
+  cursor: pointer;
+}
+
+.story-likes-display {
+  cursor: default !important;
+}
+
+.story-like-btn.liked {
+  border-color: rgba(239, 68, 68, 0.6);
+  background: rgba(220, 38, 38, 0.35);
+  color: #FCA5A5;
+}
+
+.story-like-btn.liked i {
+  color: #EF4444 !important;
+  animation: heartPop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes heartPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.4); }
+  100% { transform: scale(1); }
+}
+
+/* ── Story Viewers Sheet ── */
+.story-viewers-sheet {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(15, 23, 42, 0.96);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  border-top: 1.5px solid rgba(255, 255, 255, 0.2);
+  z-index: 30;
+  animation: slideUpSheet 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 -12px 35px rgba(0, 0, 0, 0.7);
+}
+
+@keyframes slideUpSheet {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.story-viewer-user-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 12px;
+  transition: background 0.15s ease;
+}
+
+.story-viewer-user-row:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+

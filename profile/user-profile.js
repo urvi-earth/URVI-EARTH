@@ -6,7 +6,10 @@ import { getLevelFromXP, extractTreeXP } from "./my-virtual-tree.js";
    URVI – user-profile.js | Dedicated Public User Profile
    ===================================================== */
 
-const currentUserId = localStorage.getItem("urvi_logged_user");
+const rawUserId = localStorage.getItem("urvi_logged_user");
+const currentUserId = (rawUserId && rawUserId !== "undefined" && rawUserId !== "null" && rawUserId.trim() !== "")
+    ? rawUserId.trim()
+    : null;
 
 // Parse user ID from URL parameters: ?uid=xxx or ?id=xxx
 const urlParams = new URLSearchParams(window.location.search);

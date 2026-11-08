@@ -148,7 +148,9 @@ async function loadTreePage(uid, isOwner) {
             return;
         }
 
-        try { localStorage.setItem("urvi_user_data", JSON.stringify(userData)); } catch (e) { /* ignore */ }
+        if (isOwner) {
+            try { localStorage.setItem("urvi_user_data", JSON.stringify(userData)); } catch (e) { /* ignore */ }
+        }
 
         const treeXP = extractTreeXP(userData);
         const levelData = getLevelFromXP(treeXP);

@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
     <script src="../components/dark-mode.js"></script>
+    <link rel="stylesheet" href="../components/loader.css">
+    <script src="../components/loader.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>URVI | My Profile</title>
@@ -80,20 +82,26 @@
             <!-- Top Bar Header -->
             <div class="d-flex align-items-center justify-content-between mb-4">
                 <h4 class="fw-bold m-0" style="color:var(--forest-green);">My Profile</h4>
-                <div class="notification-wrapper">
-                    <button class="notification-btn" id="notification-btn" aria-label="Notifications">
-                        <i class="bi bi-bell"></i>
-                        <span class="notif-dot" id="notif-dot" style="display:none;"></span>
-                    </button>
-                    <div class="notification-dropdown" id="notification-dropdown">
-                        <div class="notif-header">
-                            <h6>Notifications</h6>
-                            <button class="notif-clear-btn" id="notif-mark-read">Mark all read</button>
-                        </div>
-                        <div class="notif-list" id="notif-list">
-                            <div class="notif-empty">No notifications yet 🌿</div>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="notification-wrapper">
+                        <button class="notification-btn" id="notification-btn" aria-label="Notifications">
+                            <i class="bi bi-bell"></i>
+                            <span class="notif-dot" id="notif-dot" style="display:none;"></span>
+                        </button>
+                        <div class="notification-dropdown" id="notification-dropdown">
+                            <div class="notif-header">
+                                <h6>Notifications</h6>
+                                <button class="notif-clear-btn" id="notif-mark-read">Mark all read</button>
+                            </div>
+                            <div class="notif-list" id="notif-list">
+                                <div class="notif-empty">No notifications yet 🌿</div>
+                            </div>
                         </div>
                     </div>
+                    <!-- Instagram-Style Top-Right Menu Button -->
+                    <button type="button" class="insta-profile-menu-btn" id="btn-profile-mobile-menu" aria-label="Profile Options" title="Options">
+                        <i class="bi bi-list"></i>
+                    </button>
                 </div>
             </div>
 
@@ -135,7 +143,7 @@
                     <div class="profile-info-section">
                         <h2 id="welcome-name" class="profile-full-name">User Profile</h2>
                         <p class="profile-user-id" id="db-user_id">...</p>
-                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                        <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-md-start gap-2 mb-3">
                             <span class="profile-badge" id="db-userType">Loading...</span>
                             <div id="tree-level-badge-container"></div>
                         </div>
@@ -152,108 +160,20 @@
                                 <strong>0</strong><span>Following</span>
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                <!-- Edit Pencil -->
-                <button class="btn btn-success floating-pencil shadow" id="edit-pencil" title="Edit Personal Details">
-                    <i class="bi bi-pencil-fill"></i>
-                </button>
-            </div>
-
-            <!-- EDITABLE DETAILS -->
-            <div class="profile-details-card" id="profile-details-card">
-                <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h5 class="details-card-title m-0"><i class="bi bi-person-lines-fill"></i> Personal Details</h5>
-                    <div class="d-flex align-items-center gap-2 flex-wrap">
-                        <a href="mycertificates.html" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold">
-                            <i class="bi bi-award-fill me-1"></i> My Certificates
-                        </a>
-                        <a href="my-virtual-tree.html" class="btn btn-sm btn-success rounded-pill px-3 fw-bold">
-                            <i class="bi bi-tree-fill me-1"></i> My Virtual Tree
-                        </a>
-                    </div>
-                </div>
-                
-                <div class="row gy-3">
-                    <div class="col-6">
-                        <label class="field-label">First Name</label>
-                        <input type="text" id="db-firstName" class="form-control-plaintext edit-allowed" readonly>
-                    </div>
-                    <div class="col-6">
-                        <label class="field-label">Last Name</label>
-                        <input type="text" id="db-lastName" class="form-control-plaintext edit-allowed" readonly>
-                    </div>
-                    <div class="col-12">
-                        <label class="field-label">Bio</label>
-                        <textarea id="db-bio" rows="2" class="form-control-plaintext edit-allowed" readonly></textarea>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="field-label">Email Address <i class="bi bi-lock-fill"></i></label>
-                        <input type="email" id="db-email" class="form-control-plaintext restricted-field" readonly>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="field-label">Mobile Number <i class="bi bi-lock-fill"></i></label>
-                        <input type="text" id="db-mobile" class="form-control-plaintext restricted-field" readonly>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="field-label">Date of Birth</label>
-                        <input type="date" id="db-dob" class="form-control-plaintext edit-allowed" readonly>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="field-label">Joined</label>
-                        <input type="text" id="db-createdAt" class="form-control-plaintext" readonly>
-                    </div>
-                </div>
-
-                <!-- Save/Cancel Buttons -->
-                <div id="edit-buttons" class="mt-4 d-none">
-                    <button class="btn btn-success rounded-pill px-4" id="save-btn">
-                        <i class="bi bi-check-lg me-1"></i> Save Changes
-                    </button>
-                    <button class="btn btn-outline-secondary rounded-pill px-4 ms-2" id="cancel-btn">
-                        Cancel
-                    </button>
-                </div>
-            </div>
-
-            <!-- CHANGE PASSWORD / SECURITY CARD -->
-            <div class="profile-details-card mt-4" id="change-password-card">
-                <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h5 class="details-card-title m-0"><i class="bi bi-shield-lock-fill text-success me-2"></i> Account Security & Change Password</h5>
-                </div>
-                <p class="text-secondary small mb-3">Keep your URVI account secure with a strong password.</p>
-                <form id="change-password-form" onsubmit="event.preventDefault();">
-                    <div class="row gy-3">
-                        <div class="col-12 col-md-4">
-                            <label class="field-label">Current Password</label>
-                            <div class="password-input-group position-relative">
-                                <input type="password" id="pwd-current" class="form-control rounded-3" placeholder="Enter current password" autocomplete="current-password">
-                                <button type="button" class="btn-toggle-pwd" onclick="window.togglePasswordVisibility('pwd-current', this)" aria-label="Toggle current password"><i class="bi bi-eye"></i></button>
-                            </div>
+                        <!-- Bio Display (Instagram Style) -->
+                        <div class="profile-bio-container mt-2" id="profile-bio-container">
+                            <p class="profile-bio-text m-0 text-center text-md-start" id="profile-display-bio" style="font-size: 13.5px; color: #475569; line-height: 1.5; white-space: pre-line;"></p>
                         </div>
-                        <div class="col-12 col-md-4">
-                            <label class="field-label">New Password</label>
-                            <div class="password-input-group position-relative">
-                                <input type="password" id="pwd-new" class="form-control rounded-3" placeholder="Min. 6 characters" autocomplete="new-password">
-                                <button type="button" class="btn-toggle-pwd" onclick="window.togglePasswordVisibility('pwd-new', this)" aria-label="Toggle new password"><i class="bi bi-eye"></i></button>
-                            </div>
-                        </div>
-                        <div class="col-12 col-md-4">
-                            <label class="field-label">Confirm New Password</label>
-                            <div class="password-input-group position-relative">
-                                <input type="password" id="pwd-confirm" class="form-control rounded-3" placeholder="Re-enter new password" autocomplete="new-password">
-                                <button type="button" class="btn-toggle-pwd" onclick="window.togglePasswordVisibility('pwd-confirm', this)" aria-label="Toggle confirm password"><i class="bi bi-eye"></i></button>
-                            </div>
+
+                        <!-- Edit Profile Action Button -->
+                        <div class="mt-3 d-flex justify-content-center justify-content-md-start w-100">
+                            <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-4 py-1 fw-bold" id="btn-hero-edit-profile" style="font-size: 12.5px;">
+                                <i class="bi bi-pencil-square me-1"></i> Edit Profile
+                            </button>
                         </div>
                     </div>
-                    <div id="pwd-feedback" class="small mt-3 d-none"></div>
-                    <div class="mt-3">
-                        <button type="button" class="btn btn-success rounded-pill px-4 fw-bold" id="btn-update-password">
-                            <i class="bi bi-key-fill me-1"></i> Update Password
-                        </button>
-                    </div>
-                </form>
+                </div>
             </div>
 
             <!-- SCORE CARDS -->
@@ -273,14 +193,67 @@
                     <strong id="score-contributions">0</strong>
                     <small>Contributions</small>
                 </div>
+                <div class="score-card-item">
+                    <span class="score-card-icon">🔥</span>
+                    <strong id="score-streak">0</strong>
+                    <small>Best Streak</small>
+                </div>
             </div>
 
-            <!-- MY POSTS SECTION -->
+            <!-- ACTIVE CHALLENGES STATUS WIDGET -->
+            <div class="profile-card-widget mb-4" id="profile-challenges-widget">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fs-4">🔥</span>
+                        <h6 class="fw-bold m-0 text-dark">Active Monthly Challenges</h6>
+                    </div>
+                    <a href="../activities/activities.html" class="small text-success fw-bold text-decoration-none">
+                        View Activities →
+                    </a>
+                </div>
+                <div id="profile-active-challenges-list">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- QUICK ECOSYSTEM SHORTCUTS -->
+            <div class="row g-3 mb-4">
+                <div class="col-6">
+                    <a href="mycertificates.html" class="p-3 border rounded-4 bg-white d-flex align-items-center gap-2 text-decoration-none shadow-sm text-dark h-100">
+                        <span class="fs-3">📜</span>
+                        <div>
+                            <div class="fw-bold small text-dark">My Certificates</div>
+                            <small class="text-muted" style="font-size:11px;">Official Carbon Badges</small>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6">
+                    <a href="my-virtual-tree.html" class="p-3 border rounded-4 bg-white d-flex align-items-center gap-2 text-decoration-none shadow-sm text-dark h-100">
+                        <span class="fs-3">🌲</span>
+                        <div>
+                            <div class="fw-bold small text-dark">Virtual Tree</div>
+                            <small class="text-muted" style="font-size:11px;">Grow your 3D Plant</small>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <!-- MY POSTS & ACTIVITY PROOFS SECTION -->
             <div class="my-posts-section">
-                <div class="my-posts-header">
-                    <h5><i class="bi bi-grid-3x3-gap-fill"></i> My Posts</h5>
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-success rounded-pill px-3 fw-bold" id="btn-tab-posts">
+                            <i class="bi bi-grid-3x3-gap-fill me-1"></i> Posts (<span id="tab-posts-count">0</span>)
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-semibold" id="btn-tab-proofs">
+                            <i class="bi bi-camera-reels me-1"></i> Challenge Proofs (<span id="tab-proofs-count">0</span>)
+                        </button>
+                    </div>
                 </div>
                 <div class="my-posts-grid" id="my-posts-grid">
+                    <!-- Dynamically loaded -->
+                </div>
+                <div class="row g-3 d-none" id="my-proofs-grid">
                     <!-- Dynamically loaded -->
                 </div>
             </div>
@@ -321,6 +294,111 @@
                 <button class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="followListBody" style="max-height:400px;overflow-y:auto;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Settings & Security Dialog Box (Modal) ── -->
+<div class="modal fade" id="profileSettingsModal" tabindex="-1" aria-labelledby="profileSettingsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content" style="border-radius:24px; border:1px solid rgba(0,0,0,0.08); box-shadow: 0 20px 60px rgba(0,0,0,0.18); overflow:hidden;">
+            <!-- Modal Header with Tab Selector -->
+            <div class="modal-header border-0 pb-2 pt-3 px-3 d-flex flex-column align-items-stretch">
+                <div class="d-flex align-items-center justify-content-between w-100 mb-2">
+                    <h5 class="modal-title fw-bold" style="color:var(--forest-green, #14532D); font-size:18px;">
+                        <i class="bi bi-gear-fill me-2"></i>Settings & Security
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <!-- Instagram / Apple Style Tabs -->
+                <div class="d-flex p-1 rounded-pill" style="background:#F1F5F9; border: 1px solid #E2E8F0;">
+                    <button type="button" class="btn btn-sm flex-fill rounded-pill fw-bold border-0 py-2 settings-tab-btn active" id="tab-btn-edit" style="font-size:12px; background:#FFFFFF; color:#16A34A; box-shadow:0 2px 6px rgba(0,0,0,0.06);">
+                        <i class="bi bi-person-fill me-1"></i> Edit Profile
+                    </button>
+                    <button type="button" class="btn btn-sm flex-fill rounded-pill fw-bold border-0 py-2 settings-tab-btn" id="tab-btn-security" style="font-size:12px; background:transparent; color:#64748B;">
+                        <i class="bi bi-shield-lock-fill me-1"></i> Change Password
+                    </button>
+                </div>
+            </div>
+
+            <div class="modal-body p-3 p-md-4">
+                <!-- PANE 1: EDIT PROFILE -->
+                <div id="settings-pane-edit" class="settings-pane">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-muted mb-1">First Name</label>
+                            <input type="text" id="modal-firstName" class="form-control rounded-3" placeholder="First Name">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-muted mb-1">Last Name</label>
+                            <input type="text" id="modal-lastName" class="form-control rounded-3" placeholder="Last Name">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold text-muted mb-1">Bio</label>
+                            <textarea id="modal-bio" class="form-control rounded-3" rows="3" placeholder="Tell the URVI community about yourself..."></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold text-muted mb-1">Date of Birth</label>
+                            <input type="date" id="modal-dob" class="form-control rounded-3">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-muted mb-1">Email <i class="bi bi-lock-fill"></i></label>
+                            <input type="email" id="modal-email" class="form-control rounded-3 bg-light" readonly>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-muted mb-1">Mobile <i class="bi bi-lock-fill"></i></label>
+                            <input type="text" id="modal-mobile" class="form-control rounded-3 bg-light" readonly>
+                        </div>
+                    </div>
+
+                    <div id="modal-edit-feedback" class="small mt-3 d-none"></div>
+
+                    <div class="mt-4">
+                        <button type="button" class="btn btn-success w-100 rounded-pill py-2 fw-bold" id="modal-save-profile-btn" style="background:linear-gradient(135deg, #22C55E, #16A34A); border:none;">
+                            <i class="bi bi-check-lg me-1"></i> Save Profile Details
+                        </button>
+                    </div>
+                </div>
+
+                <!-- PANE 2: SECURITY & CHANGE PASSWORD -->
+                <div id="settings-pane-security" class="settings-pane d-none">
+                    <p class="text-muted small mb-3">Ensure your account uses a secure password of at least 6 characters.</p>
+
+                    <form id="modal-change-pwd-form" onsubmit="event.preventDefault();">
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-muted mb-1">Current Password</label>
+                            <div class="position-relative">
+                                <input type="password" id="modal-pwd-current" class="form-control rounded-3 pe-5" placeholder="Enter current password" autocomplete="current-password">
+                                <button type="button" class="btn position-absolute top-50 end-0 translate-middle-y text-muted border-0 me-1" onclick="window.togglePasswordVisibility('modal-pwd-current', this)"><i class="bi bi-eye"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-muted mb-1">New Password</label>
+                            <div class="position-relative">
+                                <input type="password" id="modal-pwd-new" class="form-control rounded-3 pe-5" placeholder="Min. 6 characters" autocomplete="new-password">
+                                <button type="button" class="btn position-absolute top-50 end-0 translate-middle-y text-muted border-0 me-1" onclick="window.togglePasswordVisibility('modal-pwd-new', this)"><i class="bi bi-eye"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-muted mb-1">Confirm New Password</label>
+                            <div class="position-relative">
+                                <input type="password" id="modal-pwd-confirm" class="form-control rounded-3 pe-5" placeholder="Re-enter new password" autocomplete="new-password">
+                                <button type="button" class="btn position-absolute top-50 end-0 translate-middle-y text-muted border-0 me-1" onclick="window.togglePasswordVisibility('modal-pwd-confirm', this)"><i class="bi bi-eye"></i></button>
+                            </div>
+                        </div>
+
+                        <div id="modal-pwd-feedback" class="small mt-2 d-none"></div>
+
+                        <div class="mt-4">
+                            <button type="button" class="btn btn-success w-100 rounded-pill py-2 fw-bold" id="modal-update-pwd-btn" style="background:linear-gradient(135deg, #22C55E, #16A34A); border:none;">
+                                <i class="bi bi-shield-check me-1"></i> Update Password
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </div>

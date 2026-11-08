@@ -18,12 +18,21 @@ const loggedInUserId =
         ? rawUserId.trim()
         : null;
 
+// Redirect if viewing another user's profile
+const urlParams = new URLSearchParams(window.location.search);
+const targetUidParam = urlParams.get("uid") || urlParams.get("id");
+if (targetUidParam && loggedInUserId && targetUidParam.trim().toLowerCase() !== loggedInUserId.toLowerCase()) {
+    window.location.replace(`user-profile.html?uid=${encodeURIComponent(targetUidParam.trim())}`);
+}
+
 let selectedProfileFile = null;
 
 document.addEventListener("DOMContentLoaded", () => {
     loadUserData();
     setupEditModeHandlers();
     setupAccountDeletionHandlers();
+    setupSettingsModalHandlers();
+    setupDirectMenuButton();
 });
 
 // ── Profile Picture Direct Upload & Crop ──
@@ -89,13 +98,23 @@ async function loadUserData() {
         return;
     }
 
-    // Instant render from local storage cache if available
+    // Instant render from local storage cache if available AND belongs to logged-in user
     const cachedUserData = localStorage.getItem("urvi_user_data");
     if (cachedUserData) {
         try {
             const cachedUser = JSON.parse(cachedUserData);
-            populateProfileFields(cachedUser);
-            checkDeletionStatus(cachedUser);
+            const matchesCurrent = !loggedInUserId || !cachedUser.user_id ||
+                cachedUser.user_id.toLowerCase() === loggedInUserId.toLowerCase() ||
+                (cachedUser.auth_uid && cachedUser.auth_uid === loggedInUserId) ||
+                (cachedUser.email && cachedUser.email.toLowerCase() === loggedInUserId.toLowerCase()) ||
+                loggedInUserId.toLowerCase() === "urvi.earth";
+
+            if (matchesCurrent) {
+                populateProfileFields(cachedUser);
+                checkDeletionStatus(cachedUser);
+            } else {
+                localStorage.removeItem("urvi_user_data");
+            }
         } catch (e) { /* ignore */ }
     }
 
@@ -122,10 +141,19 @@ async function loadUserData() {
         }
 
         if (user) {
-            localStorage.setItem("urvi_user_data", JSON.stringify(user));
+            const isSelf = !loggedInUserId ||
+                (user.user_id && user.user_id.toLowerCase() === loggedInUserId.toLowerCase()) ||
+                (user.auth_uid && user.auth_uid === loggedInUserId) ||
+                (user.email && user.email.toLowerCase() === loggedInUserId.toLowerCase()) ||
+                loggedInUserId.toLowerCase() === "urvi.earth";
+
+            if (isSelf) {
+                localStorage.setItem("urvi_user_data", JSON.stringify(user));
+            }
             populateProfileFields(user);
             loadFollowCounts(user.user_id || loggedInUserId);
             loadMyPosts(user.user_id || loggedInUserId);
+            loadUserChallengesAndProofs(user.user_id || loggedInUserId);
             checkDeletionStatus(user);
         } else if (!cachedUserData) {
             console.warn("User profile record fallback active.");
@@ -167,6 +195,22 @@ function populateProfileFields(user) {
     if (document.getElementById("db-dob")) document.getElementById("db-dob").value = user.dob || "";
     if (document.getElementById("db-userType")) document.getElementById("db-userType").innerHTML = typeBadgeHTML;
 
+    // Synchronize modal fields as well
+    if (document.getElementById("modal-firstName")) document.getElementById("modal-firstName").value = user.firstName || "";
+    if (document.getElementById("modal-lastName")) document.getElementById("modal-lastName").value = user.lastName || "";
+    if (document.getElementById("modal-email")) document.getElementById("modal-email").value = user.email || "";
+    if (document.getElementById("modal-mobile")) document.getElementById("modal-mobile").value = user.mobile || "";
+    if (document.getElementById("modal-bio")) document.getElementById("modal-bio").value = user.bio || "";
+    if (document.getElementById("modal-dob")) document.getElementById("modal-dob").value = user.dob || "";
+
+    // Display bio in Profile Hero Card (Instagram style)
+    const displayBio = document.getElementById("profile-display-bio");
+    if (displayBio) {
+        displayBio.textContent = user.bio || "";
+        const bioWrap = document.getElementById("profile-bio-container");
+        if (bioWrap) bioWrap.style.display = (user.bio && user.bio.trim().length > 0) ? "block" : "none";
+    }
+
     const nameElem = document.getElementById("welcome-name");
     if (nameElem) {
         nameElem.innerHTML = `${user.firstName || ""} ${user.lastName || ""}`.trim() + " " + badgeHTML;
@@ -187,6 +231,7 @@ function populateProfileFields(user) {
     if (document.getElementById("score-points")) document.getElementById("score-points").textContent = user.points || 0;
     if (document.getElementById("score-trees")) document.getElementById("score-trees").textContent = user.trees_planted || 0;
     if (document.getElementById("score-contributions")) document.getElementById("score-contributions").textContent = user.contributions || 0;
+    if (document.getElementById("score-streak")) document.getElementById("score-streak").textContent = (user.highestStreak || user.currentStreak || 0);
 
     const treeXP = extractTreeXP(user);
     const treeLvl = getLevelFromXP(treeXP);
@@ -439,72 +484,8 @@ function setupAccountDeletionHandlers() {
     });
 }
 
-// ── Edit Profile Handlers ──
+// ── Edit Profile Handlers (File Upload & Logout) ──
 function setupEditModeHandlers() {
-    const pencil = document.getElementById("edit-pencil");
-    const saveBtn = document.getElementById("save-btn");
-    const cancelBtn = document.getElementById("cancel-btn");
-    const editBtns = document.getElementById("edit-buttons");
-    const fileInput = document.getElementById("img-upload");
-
-    pencil?.addEventListener("click", () => {
-        document.querySelectorAll(".edit-allowed").forEach(inp => inp.removeAttribute("readonly"));
-        editBtns?.classList.remove("d-none");
-        pencil.classList.add("d-none");
-    });
-
-    cancelBtn?.addEventListener("click", () => {
-        document.querySelectorAll(".edit-allowed").forEach(inp => inp.setAttribute("readonly", true));
-        editBtns?.classList.add("d-none");
-        pencil?.classList.remove("d-none");
-        loadUserData();
-    });
-
-    saveBtn?.addEventListener("click", async () => {
-        saveBtn.disabled = true;
-        saveBtn.innerText = "Saving...";
-
-        try {
-            const dobVal = document.getElementById("db-dob") ? document.getElementById("db-dob").value.trim() : "";
-
-            const updates = {
-                firstName: document.getElementById("db-firstName").value.trim(),
-                lastName: document.getElementById("db-lastName").value.trim(),
-                bio: document.getElementById("db-bio").value.trim(),
-                dob: dobVal,
-                updatedAt: Date.now()
-            };
-
-            await update(ref(db, `users/${loggedInUserId}`), updates);
-
-            // Update local storage user data cache
-            const cachedUserData = localStorage.getItem("urvi_user_data");
-            if (cachedUserData) {
-                try {
-                    const cached = JSON.parse(cachedUserData);
-                    cached.firstName = updates.firstName;
-                    cached.lastName = updates.lastName;
-                    cached.bio = updates.bio;
-                    cached.dob = updates.dob;
-                    localStorage.setItem("urvi_user_data", JSON.stringify(cached));
-                } catch (e) { /* ignore */ }
-            }
-
-            alert("Profile updated successfully! 🌿");
-
-            document.querySelectorAll(".edit-allowed").forEach(inp => inp.setAttribute("readonly", true));
-            editBtns?.classList.add("d-none");
-            pencil?.classList.remove("d-none");
-            loadUserData();
-
-        } catch (err) {
-            console.error("Save profile error:", err);
-            alert("Failed to save profile: " + err.message);
-        }
-        saveBtn.disabled = false;
-        saveBtn.innerText = "Save Changes";
-    });
-
     document.getElementById("logout-btn")?.addEventListener("click", () => {
         localStorage.removeItem("urvi_logged_user");
         localStorage.removeItem("urvi_user_data");
@@ -625,12 +606,17 @@ async function loadMyPosts(targetId) {
     const countEl = document.getElementById("stat-posts-count");
     if (!grid) return;
 
+    // Show circular URVI inline loader while fetching
+    if (window.getUrviSpinnerHTML) {
+        grid.innerHTML = window.getUrviSpinnerHTML({ text: "Loading posts...", size: "sm" });
+    }
+
     const idToCheck = (targetId || loggedInUserId || "").toLowerCase();
 
     try {
         const pSnap = await get(child(ref(db), "community/posts"));
         if (!pSnap.exists()) {
-            grid.innerHTML = `<p class="text-muted p-3">No posts shared yet.</p>`;
+            grid.innerHTML = `<p class="text-muted p-4 text-center w-100" style="grid-column: 1 / -1;">No posts shared yet 🌿</p>`;
             if (countEl) countEl.querySelector("strong").innerText = 0;
             return;
         }
@@ -644,16 +630,493 @@ async function loadMyPosts(targetId) {
             });
 
         if (countEl) countEl.querySelector("strong").innerText = myPosts.length;
+        const tabPostCount = document.getElementById("tab-posts-count");
+        if (tabPostCount) tabPostCount.innerText = myPosts.length;
 
         if (myPosts.length === 0) {
-            grid.innerHTML = `<p class="text-muted p-3">No posts shared yet.</p>`;
+            grid.innerHTML = `<p class="text-muted p-4 text-center w-100" style="grid-column: 1 / -1;">No posts shared yet 🌿</p>`;
             return;
         }
 
-        grid.innerHTML = myPosts.map(p => `
-            <div class="my-post-card">
-                ${p.imageUrl ? `<img src="${p.imageUrl}" alt="Post">` : `<div class="p-3 bg-light text-dark small">${(p.description || '').slice(0, 60)}...</div>`}
+        grid.innerHTML = myPosts.map(p => {
+            const isVid = p.videoUrl || (p.imageUrl && (p.imageUrl.match(/\.(mp4|webm|mov)(\?|$)/i) || p.imageUrl.includes('/video/upload/')));
+            const mediaUrl = p.videoUrl || p.imageUrl;
+            return `
+                <div class="my-post-card" data-post-id="${p.id}" title="${(p.description || 'View post').replace(/"/g, '&quot;')}">
+                    ${mediaUrl ? (
+                        isVid
+                            ? `<video src="${mediaUrl}" preload="metadata" muted playsinline></video>
+                               <span class="post-type-badge"><i class="bi bi-play-fill"></i></span>`
+                            : `<img src="${mediaUrl}" alt="Post" loading="lazy">`
+                    ) : `
+                        <div class="post-thumb-text">
+                            <span>${(p.description || 'Eco update').slice(0, 65)}</span>
+                        </div>
+                    `}
+                    <div class="post-thumb-overlay">
+                        <i class="bi bi-eye-fill"></i>
+                    </div>
+                </div>
+            `;
+        }).join("");
+
+        // Attach click listeners to open full post modal
+        grid.querySelectorAll(".my-post-card").forEach(card => {
+            card.addEventListener("click", () => {
+                const pid = card.getAttribute("data-post-id");
+                const found = myPosts.find(item => item.id === pid);
+                if (found) showPostDetail(found);
+            });
+        });
+    } catch (e) {
+        console.warn("My posts error:", e);
+        grid.innerHTML = `<p class="text-danger p-3 text-center" style="grid-column: 1 / -1;">Failed to load posts.</p>`;
+    }
+}
+
+function showPostDetail(post) {
+    const modalEl = document.getElementById("postDetailModal");
+    const bodyEl = document.getElementById("postDetailBody");
+    if (!modalEl || !bodyEl) return;
+
+    const isVid = post.videoUrl || (post.imageUrl && (post.imageUrl.match(/\.(mp4|webm|mov)(\?|$)/i) || post.imageUrl.includes('/video/upload/')));
+    const mediaUrl = post.videoUrl || post.imageUrl;
+    const isOwner = (post.userId || post.user_id) === loggedInUserId;
+    const dateStr = post.createdAt ? new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+
+    bodyEl.innerHTML = `
+        <div class="d-flex align-items-center gap-3 mb-3">
+            <img src="${post.userPhoto || 'https://ui-avatars.com/api/?name=U&background=22C55E&color=fff'}" class="rounded-circle" style="width:44px;height:44px;object-fit:cover;" onerror="this.src='https://ui-avatars.com/api/?name=U&background=22C55E&color=fff'">
+            <div>
+                <div class="fw-bold text-dark">${post.userName || 'URVI Member'}</div>
+                <div class="text-muted small">${dateStr}</div>
             </div>
-        `).join("");
-    } catch (e) { console.warn("My posts error:", e); }
+        </div>
+        ${mediaUrl ? (
+            isVid
+                ? `<video src="${mediaUrl}" controls playsinline autoplay style="width:100%;max-height:420px;border-radius:14px;background:#000;" class="mb-3"></video>`
+                : `<img src="${mediaUrl}" alt="Post" class="w-100 rounded-3 mb-3" style="max-height:450px;object-fit:cover;">`
+        ) : ''}
+        ${post.description ? `<p class="mt-2 text-dark" style="font-size:14.5px;line-height:1.55;white-space:pre-line;">${post.description}</p>` : ''}
+        <div class="d-flex align-items-center justify-content-between pt-3 border-top mt-3">
+            <div class="d-flex gap-3 text-muted small">
+                <span><i class="bi bi-heart-fill text-danger me-1"></i> ${post.likes ? (typeof post.likes === 'object' ? Object.keys(post.likes).length : post.likes) : 0} Likes</span>
+                <span><i class="bi bi-chat-dots-fill text-success me-1"></i> ${post.comments ? (typeof post.comments === 'object' ? Object.keys(post.comments).length : post.comments) : 0} Comments</span>
+            </div>
+            ${isOwner ? `
+                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3" id="btn-delete-current-post">
+                    <i class="bi bi-trash3-fill me-1"></i> Delete
+                </button>
+            ` : ''}
+        </div>
+    `;
+
+    if (isOwner) {
+        document.getElementById("btn-delete-current-post")?.addEventListener("click", async () => {
+            if (!confirm("Are you sure you want to delete this post?")) return;
+            try {
+                await remove(ref(db, `community/posts/${post.id}`));
+                const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                if (modalInstance) modalInstance.hide();
+                loadMyPosts(loggedInUserId);
+            } catch (err) {
+                alert("Failed to delete post: " + err.message);
+            }
+        });
+    }
+
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+}
+
+async function loadUserChallengesAndProofs(targetId) {
+    const challengesListEl = document.getElementById("profile-active-challenges-list");
+    const proofsGrid = document.getElementById("my-proofs-grid");
+    const tabProofsCount = document.getElementById("tab-proofs-count");
+    const btnTabPosts = document.getElementById("btn-tab-posts");
+    const btnTabProofs = document.getElementById("btn-tab-proofs");
+    const postsGrid = document.getElementById("my-posts-grid");
+
+    // Setup tab switcher between Posts and Challenge Proofs
+    if (btnTabPosts && btnTabProofs && !btnTabPosts._isBound) {
+        btnTabPosts._isBound = true;
+        btnTabPosts.addEventListener("click", () => {
+            btnTabPosts.className = "btn btn-sm btn-success rounded-pill px-3 fw-bold";
+            btnTabProofs.className = "btn btn-sm btn-outline-secondary rounded-pill px-3 fw-semibold";
+            postsGrid?.classList.remove("d-none");
+            proofsGrid?.classList.add("d-none");
+        });
+
+        btnTabProofs.addEventListener("click", () => {
+            btnTabProofs.className = "btn btn-sm btn-success rounded-pill px-3 fw-bold";
+            btnTabPosts.className = "btn btn-sm btn-outline-secondary rounded-pill px-3 fw-semibold";
+            postsGrid?.classList.add("d-none");
+            proofsGrid?.classList.remove("d-none");
+        });
+    }
+
+    if (!challengesListEl) return;
+
+    const idToCheck = targetId || loggedInUserId;
+    if (!idToCheck) return;
+
+    const now = new Date();
+    const monthKey = `${now.getFullYear()}_${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const todayStr = now.toISOString().split("T")[0];
+
+    if (window.getUrviSpinnerHTML) {
+        challengesListEl.innerHTML = window.getUrviSpinnerHTML({ text: "Loading challenges...", size: "sm" });
+        if (proofsGrid) proofsGrid.innerHTML = window.getUrviSpinnerHTML({ text: "Loading challenge proofs...", size: "sm" });
+    }
+
+    try {
+        const uactSnap = await get(child(ref(db), `user_activities/${idToCheck}`));
+        if (!uactSnap.exists()) {
+            challengesListEl.innerHTML = `
+                <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded-4">
+                    <span class="small text-muted">No monthly challenges started yet.</span>
+                    <a href="../activities/activities.html" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold">Explore Challenges</a>
+                </div>
+            `;
+            if (proofsGrid) proofsGrid.innerHTML = `<div class="col-12 text-center text-muted py-3">No activity proofs submitted yet.</div>`;
+            if (tabProofsCount) tabProofsCount.innerText = "0";
+            return;
+        }
+
+        const monthsData = uactSnap.val();
+        const currentMonthActs = monthsData[monthKey] || {};
+        const actEntries = Object.entries(currentMonthActs);
+
+        // 1. Calculate and update best streak in score-streak card
+        let bestStreak = 0;
+        let allProofs = [];
+
+        Object.values(monthsData).forEach(mObj => {
+            if (!mObj || typeof mObj !== "object") return;
+            Object.entries(mObj).forEach(([aId, aData]) => {
+                if (aData.streak && aData.streak > bestStreak) bestStreak = aData.streak;
+                if (aData.highestStreak && aData.highestStreak > bestStreak) bestStreak = aData.highestStreak;
+                if (aData.uploads) {
+                    Object.entries(aData.uploads).forEach(([uId, u]) => {
+                        allProofs.push({
+                            actId: aId,
+                            actTitle: aData.title || aId,
+                            actIcon: aData.icon || "🌱",
+                            uId,
+                            ...u
+                        });
+                    });
+                }
+            });
+        });
+
+        const streakEl = document.getElementById("score-streak");
+        if (streakEl) streakEl.textContent = bestStreak;
+
+        // 2. Render Active Challenges Status list
+        if (actEntries.length === 0) {
+            challengesListEl.innerHTML = `
+                <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded-4">
+                    <span class="small text-muted">No active challenges for this month yet.</span>
+                    <a href="../activities/activities.html" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold">Join Challenges</a>
+                </div>
+            `;
+        } else {
+            challengesListEl.innerHTML = actEntries.map(([actId, act]) => {
+                const uploads = act.uploads ? Object.values(act.uploads) : [];
+                const todayUpload = uploads.find(u => u.date === todayStr);
+
+                let statusBadge = `<span class="badge bg-light text-danger border"><i class="bi bi-clock me-1"></i>Task Due Today</span>`;
+                if (todayUpload) {
+                    if (todayUpload.verified) statusBadge = `<span class="badge bg-success-subtle text-success"><i class="bi bi-check-circle-fill me-1"></i>Verified ✓</span>`;
+                    else if (todayUpload.rejected) statusBadge = `<span class="badge bg-danger-subtle text-danger"><i class="bi bi-x-circle-fill me-1"></i>Rejected</span>`;
+                    else statusBadge = `<span class="badge bg-warning-subtle text-warning text-dark"><i class="bi bi-hourglass-split me-1"></i>Under Review</span>`;
+                }
+
+                return `
+                    <div class="d-flex align-items-center justify-content-between p-2 mb-2 bg-light rounded-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="fs-4">${act.icon || "🌱"}</span>
+                            <div>
+                                <div class="fw-bold small text-dark">${act.title || actId}</div>
+                                <small class="text-danger fw-semibold" style="font-size:11px;">🔥 ${act.streak || 0} Days Streak</small>
+                            </div>
+                        </div>
+                        <div>
+                            ${statusBadge}
+                        </div>
+                    </div>
+                `;
+            }).join("");
+        }
+
+        // 3. Render Proofs Grid
+        if (tabProofsCount) tabProofsCount.innerText = allProofs.length;
+        if (proofsGrid) {
+            if (allProofs.length === 0) {
+                proofsGrid.innerHTML = `<div class="col-12 text-center text-muted py-3">No activity proof photos submitted yet.</div>`;
+            } else {
+                allProofs.sort((a, b) => (b.uploadedAt || 0) - (a.uploadedAt || 0));
+                proofsGrid.innerHTML = allProofs.map(u => {
+                    const isVid = isVideoUrl(u.mediaUrl) || u.mediaType === "video";
+                    const media = isVid
+                        ? `<video src="${u.mediaUrl}" controls style="height:120px; width:100%; object-fit:cover; border-radius:10px; background:#0F172A;"></video>`
+                        : `<img src="${u.mediaUrl}" style="height:120px; width:100%; object-fit:cover; border-radius:10px;" alt="Proof" onerror="this.src='../assets/logo.png'">`;
+
+                    let stBadge = `<span class="badge bg-warning text-dark" style="font-size:9.5px;">Pending</span>`;
+                    if (u.verified) stBadge = `<span class="badge bg-success" style="font-size:9.5px;">Verified ✓</span>`;
+                    if (u.rejected) stBadge = `<span class="badge bg-danger" style="font-size:9.5px;">Rejected</span>`;
+
+                    return `
+                        <div class="col-6 col-md-4 col-lg-3">
+                            <div class="p-2 border rounded-3 bg-white h-100 d-flex flex-column justify-content-between">
+                                ${media}
+                                <div class="mt-2">
+                                    <div class="fw-bold text-truncate" style="font-size:11px;">${u.actIcon || "🌱"} ${u.actTitle || "Challenge"}</div>
+                                    <div class="d-flex align-items-center justify-content-between mt-1">
+                                        <small class="text-muted" style="font-size:10px;">${u.date || "Past"}</small>
+                                        ${stBadge}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join("");
+            }
+        }
+
+    } catch (e) {
+        console.warn("Load challenges and proofs error:", e);
+    }
+}
+
+/* =====================================================
+   SETTINGS & SECURITY MODAL & DIRECT MENU BUTTON HANDLERS
+   ===================================================== */
+function setupDirectMenuButton() {
+    const menuBtn = document.getElementById("btn-profile-mobile-menu");
+    if (menuBtn) {
+        menuBtn.addEventListener("click", () => {
+            if (typeof window.openUrviProfileMenu === "function") {
+                window.openUrviProfileMenu();
+            } else {
+                const modalEl = document.getElementById("profileSettingsModal");
+                if (modalEl && window.bootstrap) {
+                    const m = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                    m.show();
+                } else {
+                    const overlay = document.getElementById("urvi-profile-sheet-overlay");
+                    const sheet = document.getElementById("urvi-profile-action-sheet");
+                    overlay?.classList.add("active");
+                    sheet?.classList.add("active");
+                    document.body.classList.add("sheet-open");
+                }
+            }
+        });
+    }
+
+    document.getElementById("btn-hero-edit-profile")?.addEventListener("click", () => {
+        const modalEl = document.getElementById("profileSettingsModal");
+        if (modalEl && window.bootstrap) {
+            const m = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            m.show();
+        }
+    });
+}
+
+function setupSettingsModalHandlers() {
+    // 1. Tab Switching
+    const tabEdit = document.getElementById("tab-btn-edit");
+    const tabSecurity = document.getElementById("tab-btn-security");
+    const paneEdit = document.getElementById("settings-pane-edit");
+    const paneSecurity = document.getElementById("settings-pane-security");
+
+    tabEdit?.addEventListener("click", () => {
+        tabEdit.style.background = "#FFFFFF";
+        tabEdit.style.color = "#16A34A";
+        tabEdit.style.boxShadow = "0 2px 6px rgba(0,0,0,0.06)";
+        tabSecurity.style.background = "transparent";
+        tabSecurity.style.color = "#64748B";
+        tabSecurity.style.boxShadow = "none";
+        paneEdit?.classList.remove("d-none");
+        paneSecurity?.classList.add("d-none");
+    });
+
+    tabSecurity?.addEventListener("click", () => {
+        tabSecurity.style.background = "#FFFFFF";
+        tabSecurity.style.color = "#16A34A";
+        tabSecurity.style.boxShadow = "0 2px 6px rgba(0,0,0,0.06)";
+        tabEdit.style.background = "transparent";
+        tabEdit.style.color = "#64748B";
+        tabEdit.style.boxShadow = "none";
+        paneSecurity?.classList.remove("d-none");
+        paneEdit?.classList.add("d-none");
+    });
+
+    // 2. Save Profile Details from Modal
+    const modalSaveBtn = document.getElementById("modal-save-profile-btn");
+    const modalEditFeedback = document.getElementById("modal-edit-feedback");
+
+    modalSaveBtn?.addEventListener("click", async () => {
+        modalSaveBtn.disabled = true;
+        modalSaveBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Saving...`;
+
+        try {
+            const updates = {
+                firstName: document.getElementById("modal-firstName").value.trim(),
+                lastName: document.getElementById("modal-lastName").value.trim(),
+                bio: document.getElementById("modal-bio").value.trim(),
+                dob: document.getElementById("modal-dob").value.trim(),
+                updatedAt: Date.now()
+            };
+
+            await update(ref(db, `users/${loggedInUserId}`), updates);
+
+            const cachedUserData = localStorage.getItem("urvi_user_data");
+            if (cachedUserData) {
+                try {
+                    const cached = JSON.parse(cachedUserData);
+                    Object.assign(cached, updates);
+                    localStorage.setItem("urvi_user_data", JSON.stringify(cached));
+                } catch (e) { /* ignore */ }
+            }
+
+            if (modalEditFeedback) {
+                modalEditFeedback.className = "alert alert-success p-2 small mt-3 rounded-3";
+                modalEditFeedback.innerHTML = `✅ Profile details updated successfully! 🌿`;
+                modalEditFeedback.classList.remove("d-none");
+            }
+
+            loadUserData();
+
+            setTimeout(() => {
+                if (modalEditFeedback) modalEditFeedback.classList.add("d-none");
+                const modalEl = document.getElementById("profileSettingsModal");
+                if (modalEl && window.bootstrap) {
+                    const modal = window.bootstrap.Modal.getInstance(modalEl);
+                    modal?.hide();
+                }
+            }, 1400);
+
+        } catch (err) {
+            console.error("Save profile error:", err);
+            if (modalEditFeedback) {
+                modalEditFeedback.className = "alert alert-danger p-2 small mt-3 rounded-3";
+                modalEditFeedback.innerHTML = `❌ Failed to save: ${err.message}`;
+                modalEditFeedback.classList.remove("d-none");
+            }
+        } finally {
+            modalSaveBtn.disabled = false;
+            modalSaveBtn.innerHTML = `<i class="bi bi-check-lg me-1"></i> Save Profile Details`;
+        }
+    });
+
+    // 3. Update Password from Modal
+    const modalUpdatePwdBtn = document.getElementById("modal-update-pwd-btn");
+    const modalPwdFeedback = document.getElementById("modal-pwd-feedback");
+
+    modalUpdatePwdBtn?.addEventListener("click", async () => {
+        const curInput = document.getElementById("modal-pwd-current");
+        const newInput = document.getElementById("modal-pwd-new");
+        const confInput = document.getElementById("modal-pwd-confirm");
+
+        const curVal = curInput ? curInput.value.trim() : "";
+        const newVal = newInput ? newInput.value.trim() : "";
+        const confVal = confInput ? confInput.value.trim() : "";
+
+        function showModalPwdFeedback(msg, type = "danger") {
+            if (!modalPwdFeedback) return;
+            modalPwdFeedback.className = `alert alert-${type} p-2 small mt-2 rounded-3`;
+            modalPwdFeedback.innerHTML = msg;
+            modalPwdFeedback.classList.remove("d-none");
+        }
+
+        modalUpdatePwdBtn.disabled = true;
+        modalUpdatePwdBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Verifying...`;
+
+        try {
+            let userRecord = null;
+            const snap = await get(child(ref(db), `users/${loggedInUserId}`));
+            if (snap.exists()) userRecord = snap.val();
+
+            const dbHasPassword = Boolean(
+                userRecord &&
+                userRecord.password &&
+                typeof userRecord.password === "string" &&
+                userRecord.password.trim().length > 0 &&
+                userRecord.password !== "google"
+            );
+
+            if (dbHasPassword) {
+                if (!curVal) {
+                    showModalPwdFeedback("⚠️ Please enter your current password to verify security.", "warning");
+                    modalUpdatePwdBtn.disabled = false;
+                    modalUpdatePwdBtn.innerHTML = `<i class="bi bi-shield-check me-1"></i> Update Password`;
+                    return;
+                }
+                if (userRecord.password !== curVal) {
+                    showModalPwdFeedback("❌ Current password is incorrect. Please try again.", "danger");
+                    modalUpdatePwdBtn.disabled = false;
+                    modalUpdatePwdBtn.innerHTML = `<i class="bi bi-shield-check me-1"></i> Update Password`;
+                    return;
+                }
+            }
+
+            if (!newVal || !confVal) {
+                showModalPwdFeedback("⚠️ Please enter and confirm your new password.", "warning");
+                modalUpdatePwdBtn.disabled = false;
+                modalUpdatePwdBtn.innerHTML = `<i class="bi bi-shield-check me-1"></i> Update Password`;
+                return;
+            }
+
+            if (newVal.length < 6) {
+                showModalPwdFeedback("⚠️ New password must be at least 6 characters long.", "warning");
+                modalUpdatePwdBtn.disabled = false;
+                modalUpdatePwdBtn.innerHTML = `<i class="bi bi-shield-check me-1"></i> Update Password`;
+                return;
+            }
+
+            if (newVal !== confVal) {
+                showModalPwdFeedback("⚠️ New password and confirmation do not match.", "warning");
+                modalUpdatePwdBtn.disabled = false;
+                modalUpdatePwdBtn.innerHTML = `<i class="bi bi-shield-check me-1"></i> Update Password`;
+                return;
+            }
+
+            await update(ref(db, `users/${loggedInUserId}`), {
+                password: newVal,
+                passwordUpdatedAt: Date.now()
+            });
+
+            const cached = localStorage.getItem("urvi_user_data");
+            if (cached) {
+                try {
+                    const c = JSON.parse(cached);
+                    c.password = newVal;
+                    localStorage.setItem("urvi_user_data", JSON.stringify(c));
+                } catch (e) { /* ignore */ }
+            }
+
+            showModalPwdFeedback("✅ Password updated successfully! Your account is secure.", "success");
+            if (curInput) curInput.value = "";
+            if (newInput) newInput.value = "";
+            if (confInput) confInput.value = "";
+
+            setTimeout(() => {
+                if (modalPwdFeedback) modalPwdFeedback.classList.add("d-none");
+                const modalEl = document.getElementById("profileSettingsModal");
+                if (modalEl && window.bootstrap) {
+                    const modal = window.bootstrap.Modal.getInstance(modalEl);
+                    modal?.hide();
+                }
+            }, 1600);
+
+        } catch (err) {
+            console.error("Password update error:", err);
+            showModalPwdFeedback("❌ Error: " + err.message, "danger");
+        } finally {
+            modalUpdatePwdBtn.disabled = false;
+            modalUpdatePwdBtn.innerHTML = `<i class="bi bi-shield-check me-1"></i> Update Password`;
+        }
+    });
 }

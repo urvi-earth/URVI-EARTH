@@ -13,6 +13,31 @@ body {
     color: #1E293B;
 }
 
+/* ── Clean Green Eco Scrollbar ── */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #22C55E rgba(34, 197, 94, 0.08);
+}
+
+::-webkit-scrollbar {
+    width: 7px;
+    height: 7px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(34, 197, 94, 0.05);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #22C55E 0%, #16A34A 100%);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #15803D;
+}
+
 .admin-wrapper {
     display: flex;
     min-height: 100vh;
@@ -121,8 +146,61 @@ body {
 .status-pending { background: #FEF3C7; color: #D97706; }
 .status-deletion { background: #FEE2E2; color: #DC2626; }
 
+/* Monthly Challenges & Verification styling */
+.monthly-activity-card {
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    padding: 18px;
+    background: #FFFFFF;
+    transition: all 0.2s ease;
+}
+.monthly-activity-card:hover {
+    box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+    border-color: #BBF7D0;
+}
+
+.verification-task-card {
+    border: 1.5px solid #E2E8F0;
+    border-radius: 18px;
+    background: #FFFFFF;
+    overflow: hidden;
+    margin-bottom: 20px;
+    transition: all 0.2s ease;
+}
+.verification-task-card.pending {
+    border-color: #FDE047;
+    box-shadow: 0 4px 16px rgba(234, 179, 8, 0.1);
+}
+
+.task-media-preview {
+    max-height: 260px;
+    width: 100%;
+    object-fit: cover;
+    border-radius: 12px;
+    background: #0F172A;
+}
+
+.admin-story-card {
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #FFFFFF;
+    position: relative;
+    transition: all 0.2s ease;
+}
+.admin-story-card:hover {
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+.admin-story-thumb {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    background: #0F172A;
+}
+
 @media (max-width: 992px) {
     .admin-wrapper { flex-direction: column; }
     .admin-sidebar { width: 100%; padding: 20px; }
-    .admin-content { padding: 20px; }
+    .admin-content { padding: 16px; }
+    .task-media-preview { max-height: 220px; }
 }

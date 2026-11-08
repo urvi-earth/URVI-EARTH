@@ -1,54 +1,325 @@
 /* =====================================================
-   URVI – impact.js | 4 Leaderboards & Interactive Pinned Posts
+   URVI – impact.js | Unified Metrics, Campaigns & Pinned Announcements
    ===================================================== */
-import { db, ref, get, child, set, update, remove, push } from "../config.js";
+import { db, ref, get, child, set, update, push, remove } from "../config.js";
 
-const currentUserId = localStorage.getItem("urvi_logged_user");
-let allUsersList = [];
+function getActiveUserId() {
+    let raw = localStorage.getItem("urvi_logged_user");
+    if (!raw || raw === "undefined" || raw === "null") {
+        try {
+            const userData = JSON.parse(localStorage.getItem("urvi_user_data") || "{}");
+            raw = userData.user_id || userData.id || userData.uid || userData.email;
+        } catch (e) { /* ignore */ }
+    }
+    return (raw && raw !== "undefined" && raw !== "null") ? String(raw).trim() : null;
+}
+
+const currentUserId = getActiveUserId();
+let allEventsList = [];
+let selectedCategory = "All";
 let pinnedPostsList = [];
-let activeTab = "total";
-let maxLimit = 10;
-let leaderboardSettings = { total: true, points: true, plants: true, contributions: true };
 
 document.addEventListener("DOMContentLoaded", () => {
     initImpactPage();
-    setupTabSwitching();
-    setupExpandButton();
+    setupCategoryFilters();
 });
 
 async function initImpactPage() {
-    await fetchSettings();
-    await fetchUsers();
+    await fetchGlobalMetrics();
+    await fetchCampaignsAndEvents();
     await fetchPinnedPosts();
-    renderLeaderboard();
     renderPinnedPosts();
 }
 
-async function fetchSettings() {
+/** 1. Unified Global Real-time Metrics */
+async function fetchGlobalMetrics() {
+    const treesEl = document.getElementById("impact-stat-trees");
+    const volsEl = document.getElementById("impact-stat-volunteers");
+    const campsEl = document.getElementById("impact-stat-campaigns");
+    const ptsEl = document.getElementById("impact-stat-points");
+
     try {
-        const sSnap = await get(child(ref(db), "settings/leaderboard_visibility"));
-        if (sSnap.exists()) {
-            leaderboardSettings = { ...leaderboardSettings, ...sSnap.val() };
+        const snap = await get(child(ref(db), "global_impact"));
+        if (snap.exists()) {
+            const g = snap.val();
+            if (treesEl) treesEl.innerText = (g.trees || 0).toLocaleString() + "+";
+            if (volsEl) volsEl.innerText = (g.volunteers || 0).toLocaleString() + "+";
+            if (campsEl) campsEl.innerText = (g.campaigns || 0).toLocaleString();
+            if (ptsEl) ptsEl.innerText = (g.points || 0).toLocaleString() + "+";
+        } else {
+            if (treesEl) treesEl.innerText = "400+";
+            if (volsEl) volsEl.innerText = "350+";
+            if (campsEl) campsEl.innerText = "18";
+            if (ptsEl) ptsEl.innerText = "5,000+";
         }
     } catch (e) {
-        console.warn("Leaderboard settings fetch error:", e);
+        console.warn("Global impact fetch error:", e);
     }
 }
 
-async function fetchUsers() {
+/** 2. Campaigns and Drives */
+async function fetchCampaignsAndEvents() {
+    const eventsGrid = document.getElementById("events-grid");
+    if (!eventsGrid) return;
+
+    if (window.getUrviSpinnerHTML) {
+        eventsGrid.innerHTML = `<div class="col-12">${window.getUrviSpinnerHTML({ text: "Loading upcoming campaigns..." })}</div>`;
+    } else {
+        eventsGrid.innerHTML = `<div class="col-12 text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading upcoming campaigns...</div>`;
+    }
+
     try {
-        const uSnap = await get(child(ref(db), "users"));
-        if (uSnap.exists()) {
-            const data = uSnap.val();
-            allUsersList = Object.keys(data)
-                .map(k => ({ id: k, ...data[k] }))
-                .filter(u => u.status !== "deleted");
+        const snap = await get(child(ref(db), "events"));
+        if (!snap.exists()) {
+            renderEmptyEventsState();
+            renderMyJoinedActivities([]);
+            return;
         }
-    } catch (e) {
-        console.error("Users fetch error:", e);
+
+        const eventsData = snap.val();
+        allEventsList = Object.keys(eventsData).map(k => ({ id: k, ...eventsData[k] }));
+
+        // Sort newest first
+        allEventsList.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+        renderUpcomingEvents();
+        renderMyJoinedActivities(allEventsList);
+
+    } catch (err) {
+        console.error("Load campaigns error:", err);
+        renderEmptyEventsState();
+    } finally {
+        if (window.hideUrviLoader) window.hideUrviLoader();
     }
 }
 
+function setupCategoryFilters() {
+    document.querySelectorAll(".category-filter-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            document.querySelectorAll(".category-filter-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            selectedCategory = btn.dataset.category || "All";
+            renderUpcomingEvents();
+        });
+    });
+}
+
+function renderUpcomingEvents() {
+    const eventsGrid = document.getElementById("events-grid");
+    const countBadge = document.getElementById("campaigns-count-badge");
+    if (!eventsGrid) return;
+
+    let filteredEvents = allEventsList.filter(e => e.status !== "cancelled");
+    if (selectedCategory !== "All") {
+        filteredEvents = filteredEvents.filter(e => e.category === selectedCategory);
+    }
+
+    if (countBadge) countBadge.innerText = `${filteredEvents.length} Campaigns`;
+
+    if (filteredEvents.length === 0) {
+        eventsGrid.innerHTML = `
+            <div class="col-12 text-center py-5">
+                <div class="mb-2" style="font-size:36px;">🌿</div>
+                <h6 class="fw-bold text-dark">No campaigns listed under "${selectedCategory}" right now.</h6>
+                <small class="text-muted">Stay tuned as new drives are announced soon!</small>
+            </div>
+        `;
+        return;
+    }
+
+    eventsGrid.innerHTML = filteredEvents.map(event => {
+        const isJoined = currentUserId && event.participants && event.participants[currentUserId] !== undefined;
+        const now = Date.now();
+        const deadlineMs = event.deadlineTimestamp || (event.deadline ? new Date(event.deadline).getTime() : 0);
+        const isExpired = deadlineMs > 0 && now > deadlineMs;
+        const isCompleted = event.status === "completed";
+        const participantCount = event.participants ? Object.keys(event.participants).length : (event.participantsCount || 0);
+        const maxCap = event.maxCapacity || 0;
+        const isFull = maxCap > 0 && participantCount >= maxCap;
+
+        let actionBtnHTML = "";
+        if (isCompleted) {
+            actionBtnHTML = `
+                <div class="btn btn-primary w-100 rounded-pill py-2 btn-sm fw-bold disabled border-0" style="background:#2563EB; font-size:12px;">
+                    <i class="bi bi-check-all me-1"></i> Campaign Completed
+                </div>`;
+        } else if (isJoined) {
+            actionBtnHTML = `
+                <button type="button" class="btn btn-outline-danger w-100 rounded-pill py-2 btn-sm fw-bold btn-cancel-rsvp" data-event-id="${event.id}" style="font-size:12px;">
+                    <i class="bi bi-x-circle me-1"></i> Cancel RSVP
+                </button>`;
+        } else if (isExpired) {
+            actionBtnHTML = `
+                <button type="button" class="btn btn-secondary w-100 rounded-pill py-2 btn-sm fw-bold disabled" style="font-size:12px;">
+                    <i class="bi bi-clock-history me-1"></i> Registration Closed
+                </button>`;
+        } else if (isFull) {
+            actionBtnHTML = `
+                <button type="button" class="btn btn-secondary w-100 rounded-pill py-2 btn-sm fw-bold disabled" style="font-size:12px;">
+                    <i class="bi bi-people-fill me-1"></i> Capacity Full
+                </button>`;
+        } else {
+            actionBtnHTML = `
+                <button type="button" class="btn btn-success w-100 rounded-pill py-2 btn-sm fw-bold shadow-sm btn-join-event" data-event-id="${event.id}" style="font-size:12px;">
+                    <i class="bi bi-box-arrow-in-right me-1"></i> Join This Drive
+                </button>`;
+        }
+
+        const bannerImg = event.bannerUrl || event.imageUrl || "../assets/logo.png";
+        const hasCustomBanner = event.bannerUrl || event.imageUrl;
+
+        const bannerMarkup = hasCustomBanner ? `
+            <div class="campaign-banner-wrapper">
+                <img src="${bannerImg}" class="w-100 h-100" style="object-fit:cover;" alt="${event.title}" onerror="this.src='../assets/logo.png'">
+                <span class="badge position-absolute top-0 end-0 m-3 fw-bold shadow-sm" style="background: rgba(245, 158, 11, 0.95); color: #0F172A; font-size: 10.5px; padding: 4px 10px; border-radius: 30px; z-index: 2;">
+                    <i class="bi bi-star-fill me-1"></i> ${event.points || 100} Eco Pts
+                </span>
+            </div>
+        ` : `
+            <div class="campaign-banner-wrapper d-flex align-items-center justify-content-center" style="background: linear-gradient(135deg, #14532D 0%, #15803D 50%, #22C55E 100%);">
+                <span class="badge position-absolute top-0 end-0 m-3 fw-bold shadow-sm" style="background: rgba(245, 158, 11, 0.95); color: #0F172A; font-size: 10.5px; padding: 4px 10px; border-radius: 30px; z-index: 2;">
+                    <i class="bi bi-star-fill me-1"></i> ${event.points || 100} Eco Pts
+                </span>
+                <img src="${bannerImg}" style="max-height: 70px; width: auto; object-fit: contain; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.25));" alt="${event.title}">
+            </div>
+        `;
+
+        return `
+            <div class="col-12 col-md-6 col-xl-4">
+                <div class="campaign-card">
+                    ${bannerMarkup}
+                    <div class="p-3 d-flex flex-column justify-content-between flex-grow-1">
+                        <div>
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <span class="badge bg-success-subtle text-success rounded-pill px-2 py-1 small fw-semibold">
+                                    ${event.category || 'Campaign'}
+                                </span>
+                                <small class="text-muted fw-semibold" style="font-size:11px;">
+                                    <i class="bi bi-people-fill text-success me-1"></i>${participantCount}${maxCap > 0 ? ` / ${maxCap}` : ''} Joined
+                                </small>
+                            </div>
+                            <h5 class="fw-bold text-dark mb-1 text-truncate" style="font-size:1.02rem;">${event.title}</h5>
+                            <p class="small text-muted mb-3" style="font-size:12px; line-height:1.4; height:34px; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">
+                                ${event.desc || event.description || 'Join our environmental restoration initiative.'}
+                            </p>
+                            <div class="small text-muted mb-1" style="font-size:11.5px;">
+                                <i class="bi bi-geo-alt-fill text-danger me-1"></i>${event.location || 'Site Location'}
+                            </div>
+                            <div class="small text-muted mb-3" style="font-size:11.5px;">
+                                <i class="bi bi-calendar-event text-primary me-1"></i>${event.date || 'Upcoming'}
+                            </div>
+                        </div>
+
+                        <div class="pt-2 border-top">
+                            ${actionBtnHTML}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join("");
+
+    wireCampaignButtons();
+}
+
+function wireCampaignButtons() {
+    document.querySelectorAll(".btn-join-event").forEach(btn => {
+        btn.addEventListener("click", async () => {
+            if (!currentUserId) {
+                alert("Please log in to join campaigns!");
+                window.location.href = "../logins/login.html";
+                return;
+            }
+
+            const eventId = btn.dataset.eventId;
+            btn.disabled = true;
+
+            try {
+                const uSnap = await get(child(ref(db), `users/${currentUserId}`));
+                const user = uSnap.exists() ? uSnap.val() : {};
+                const fullName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.name || "Volunteer";
+
+                await set(ref(db, `events/${eventId}/participants/${currentUserId}`), {
+                    userId: currentUserId,
+                    name: fullName,
+                    email: user.email || "",
+                    registeredAt: Date.now()
+                });
+
+                alert("🎉 Successfully registered for this environmental drive!");
+                await fetchCampaignsAndEvents();
+            } catch (err) {
+                alert("Registration failed: " + err.message);
+                btn.disabled = false;
+            }
+        });
+    });
+
+    document.querySelectorAll(".btn-cancel-rsvp").forEach(btn => {
+        btn.addEventListener("click", async () => {
+            if (!confirm("Are you sure you want to cancel your registration?")) return;
+            const eventId = btn.dataset.eventId;
+            btn.disabled = true;
+
+            try {
+                await remove(ref(db, `events/${eventId}/participants/${currentUserId}`));
+                alert("Registration cancelled.");
+                await fetchCampaignsAndEvents();
+            } catch (err) {
+                alert("Cancellation failed: " + err.message);
+                btn.disabled = false;
+            }
+        });
+    });
+}
+
+function renderMyJoinedActivities(events) {
+    const regSection = document.getElementById("my-registered-section");
+    const regGrid = document.getElementById("my-activities-grid");
+    if (!regSection || !regGrid || !currentUserId) return;
+
+    const myEvents = events.filter(e => e.participants && e.participants[currentUserId] !== undefined);
+    if (myEvents.length === 0) {
+        regSection.style.display = "none";
+        return;
+    }
+
+    regSection.style.display = "block";
+    regGrid.innerHTML = myEvents.map(e => {
+        const isCompleted = e.status === "completed";
+        return `
+            <div class="col-12 col-md-6 col-xl-4">
+                <div class="p-3 border rounded-4 bg-white d-flex align-items-center justify-content-between h-100">
+                    <div>
+                        <span class="badge ${isCompleted ? 'bg-primary' : 'bg-success'} rounded-pill mb-1" style="font-size:10px;">
+                            ${isCompleted ? 'Completed ✓' : 'Registered'}
+                        </span>
+                        <h6 class="fw-bold m-0 text-dark">${e.title}</h6>
+                        <small class="text-muted" style="font-size:11px;"><i class="bi bi-calendar3 me-1"></i>${e.date || 'Scheduled'}</small>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-warning text-dark">+${e.points || 100} pts</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
+function renderEmptyEventsState() {
+    const eventsGrid = document.getElementById("events-grid");
+    if (eventsGrid) {
+        eventsGrid.innerHTML = `
+            <div class="col-12 text-center py-5">
+                <div class="mb-2" style="font-size:36px;">🍃</div>
+                <h5 class="fw-bold text-dark">No upcoming campaigns available right now.</h5>
+                <small class="text-muted">Please check back soon!</small>
+            </div>
+        `;
+    }
+}
+
+/** 3. Pinned Announcements (Community Highlights) */
 async function fetchPinnedPosts() {
     try {
         const pSnap = await get(child(ref(db), "community/posts"));
@@ -65,543 +336,45 @@ async function fetchPinnedPosts() {
     }
 }
 
-function setupTabSwitching() {
-    document.querySelectorAll(".leaderboard-tab").forEach(tab => {
-        tab.addEventListener("click", () => {
-            document.querySelectorAll(".leaderboard-tab").forEach(t => t.classList.remove("active"));
-            tab.classList.add("active");
-            activeTab = tab.dataset.tab || "total";
-            maxLimit = 10;
-            renderLeaderboard();
-        });
-    });
-}
-
-function setupExpandButton() {
-    const expandBtn = document.getElementById("btn-expand-leaderboard");
-    if (expandBtn) {
-        expandBtn.addEventListener("click", () => {
-            maxLimit = maxLimit === 10 ? 50 : 10;
-            expandBtn.innerText = maxLimit === 50 ? "Show Top 10 Only" : "Show Top 50 Champions";
-            renderLeaderboard();
-        });
-    }
-}
-
-/** Calculate Total Eco Score formula */
-function calculateTotalEcoScore(user) {
-    const pts = user.points || 0;
-    const trees = user.trees_planted || 0;
-    const contrib = user.contributions || 0;
-    return Math.round((pts * 1.0) + (trees * 50) + (contrib * 20));
-}
-
-function renderLeaderboard() {
-    const container = document.getElementById("leaderboard-rows");
+function renderPinnedPosts() {
+    const container = document.getElementById("pinned-posts-container");
     if (!container) return;
 
-    // Check if the active tab is disabled by site administration
-    if (leaderboardSettings[activeTab] === false) {
+    if (!pinnedPostsList || pinnedPostsList.length === 0) {
         container.innerHTML = `
-            <div class="text-center py-5 bg-white rounded-4 border">
-                <div class="mb-2" style="font-size:36px;">🔒</div>
-                <h6 class="fw-bold text-muted m-0">This leaderboard is currently paused by site administration.</h6>
+            <div class="col-12 text-center py-4">
+                <p class="text-muted small m-0">No pinned announcements right now.</p>
             </div>
         `;
         return;
     }
 
-    // Sort users deterministically
-    const sorted = [...allUsersList].sort((a, b) => {
-        let valA = 0;
-        let valB = 0;
-
-        if (activeTab === "total") {
-            valA = calculateTotalEcoScore(a);
-            valB = calculateTotalEcoScore(b);
-        } else if (activeTab === "plants") {
-            valA = a.trees_planted || a.trees || 0;
-            valB = b.trees_planted || b.trees || 0;
-        } else if (activeTab === "contributions") {
-            valA = a.contributions || a.eventsJoined || 0;
-            valB = b.contributions || b.eventsJoined || 0;
-        } else {
-            valA = a.points || 0;
-            valB = b.points || 0;
-        }
-
-        if (valB !== valA) return valB - valA;
-        return (a.user_id || a.id || "").localeCompare(b.user_id || b.id || "");
-    });
-
-    const displayList = sorted.slice(0, maxLimit);
-
-    if (displayList.length === 0) {
-        container.innerHTML = `
-            <div class="text-center py-4 bg-white rounded-4 border">
-                <p class="text-muted m-0" style="font-size:13px;">No active members found for this metric.</p>
-            </div>
-        `;
-        return;
-    }
-
-    container.innerHTML = displayList.map((user, idx) => {
-        const rank = idx + 1;
-        let rankBadge = `<span class="fw-bold text-muted" style="width:24px; text-align:center;">#${rank}</span>`;
-        if (rank === 1) rankBadge = `<span style="font-size:22px;">🥇</span>`;
-        else if (rank === 2) rankBadge = `<span style="font-size:22px;">🥈</span>`;
-        else if (rank === 3) rankBadge = `<span style="font-size:22px;">🥉</span>`;
-
-        const fullName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.user_id || "Volunteer";
-        const handle = user.user_id || user.id;
-
-        let metricVal = 0;
-        let metricLabel = "";
-
-        if (activeTab === "total") {
-            metricVal = calculateTotalEcoScore(user).toLocaleString();
-            metricLabel = "Total Eco Score";
-        } else if (activeTab === "plants") {
-            metricVal = (user.trees_planted || user.trees || 0).toLocaleString();
-            metricLabel = "Trees Planted";
-        } else if (activeTab === "contributions") {
-            metricVal = (user.contributions || user.eventsJoined || 0).toLocaleString();
-            metricLabel = "Contributions";
-        } else {
-            metricVal = (user.points || 0).toLocaleString();
-            metricLabel = "Eco Points";
-        }
-
-        const isPic = user.profilePic && user.profilePic !== "default" && user.profilePic.length > 5;
-        const avatarHTML = isPic 
-            ? `<img src="${user.profilePic}" style="width:42px; height:42px; border-radius:50%; object-fit:cover;" alt="${fullName}">`
-            : `<div style="width:42px; height:42px; border-radius:50%; background:#15803D; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700;">${(user.firstName || 'U').charAt(0).toUpperCase()}</div>`;
+    container.innerHTML = pinnedPostsList.map(post => {
+        const author = post.authorName || post.authorId || "URVI Team";
+        const avatar = post.authorPic || `https://ui-avatars.com/api/?name=${encodeURIComponent(author)}&background=22C55E&color=fff`;
+        const timeAgo = post.createdAt ? new Date(post.createdAt).toLocaleDateString() : "Pinned";
 
         return `
-            <div class="p-3 bg-white rounded-4 border shadow-sm mb-2 d-flex align-items-center justify-content-between gap-3">
-                <div class="d-flex align-items-center gap-3" style="min-width:0;">
-                    ${rankBadge}
-                    ${avatarHTML}
-                    <div style="min-width:0;">
-                        <h6 class="fw-bold text-dark m-0 text-truncate">
-                            <a href="../profile/user-profile.html?uid=${encodeURIComponent(handle)}" class="text-dark text-decoration-none">
-                                ${fullName}
-                            </a>
-                        </h6>
-                        <small class="text-muted">
-                            <a href="../profile/user-profile.html?uid=${encodeURIComponent(handle)}" class="text-muted text-decoration-none">
-                                @${handle}
-                            </a>
-                        </small>
+            <div class="col-12 col-md-6 col-xl-4">
+                <div class="p-3 border rounded-4 bg-white h-100 d-flex flex-column justify-content-between shadow-sm">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <img src="${avatar}" class="rounded-circle" style="width:32px; height:32px; object-fit:cover;" alt="${author}">
+                            <div>
+                                <div class="fw-bold small text-dark">${author}</div>
+                                <small class="text-muted" style="font-size:10px;">${timeAgo}</small>
+                            </div>
+                        </div>
+                        <p class="small text-dark mb-3" style="line-height:1.4; font-size:12px;">${post.text || post.caption || ""}</p>
                     </div>
-                </div>
-                <div class="text-end">
-                    <span class="fw-bold text-success" style="font-size:16px;">${metricVal}</span>
-                    <small class="d-block text-muted" style="font-size:10px;">${metricLabel}</small>
+                    <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+                        <span class="badge bg-success-subtle text-success small"><i class="bi bi-pin-angle-fill me-1"></i>Official</span>
+                        <a href="../community/community.html" class="btn btn-sm btn-link text-success fw-bold text-decoration-none p-0" style="font-size:12px;">
+                            View in Community →
+                        </a>
+                    </div>
                 </div>
             </div>
         `;
     }).join("");
 }
-
-function getActiveUserId() {
-    let raw = localStorage.getItem("urvi_logged_user");
-    if (!raw || raw === "undefined" || raw === "null") {
-        try {
-            const userData = JSON.parse(localStorage.getItem("urvi_user_data") || "{}");
-            raw = userData.user_id || userData.id || userData.uid || userData.email;
-        } catch (e) { /* ignore */ }
-    }
-    return (raw && raw !== "undefined" && raw !== "null") ? String(raw).trim() : null;
-}
-
-async function renderPinnedPosts() {
-    const container = document.getElementById("pinned-posts-container");
-    if (!container) return;
-
-    if (pinnedPostsList.length === 0) {
-        container.innerHTML = `
-            <div class="text-center py-4 bg-white rounded-4 border col-12 shadow-sm">
-                <p class="text-muted m-0" style="font-size:13px;">No pinned posts from administrators currently.</p>
-            </div>
-        `;
-        return;
-    }
-
-    const activeUserId = getActiveUserId();
-
-    const cardsHTML = await Promise.all(pinnedPostsList.map(async post => {
-        const authorHandle = post.userId || post.user_id || "admin";
-        let isLiked = false;
-        if (activeUserId) {
-            try {
-                const lSnap = await get(child(ref(db), `community/likes/${post.id}/${activeUserId}`));
-                isLiked = lSnap.exists();
-            } catch (e) { /* ignore */ }
-        }
-
-        const dateStr = post.createdAt ? new Date(post.createdAt).toLocaleDateString() : "Recent";
-        const hasMedia = post.imageUrl && post.imageUrl.length > 5;
-        const isVid = post.isVideo || (post.imageUrl && (post.imageUrl.includes(".mp4") || post.imageUrl.includes(".webm")));
-
-        const mediaMarkup = hasMedia ? (isVid ? `
-            <div class="rounded-3 overflow-hidden mb-3 bg-black" style="cursor:pointer;" onclick="window.openPostModal('${post.id}')">
-                <video src="${post.imageUrl}" class="w-100" style="max-height:220px; object-fit:cover;"></video>
-            </div>
-        ` : `
-            <div class="rounded-3 overflow-hidden mb-3" style="cursor:pointer;" onclick="window.openPostModal('${post.id}')">
-                <img src="${post.imageUrl}" class="w-100" style="max-height:220px; object-fit:cover;" alt="Post media">
-            </div>
-        `) : "";
-
-        return `
-            <div class="col-12 col-md-6">
-                <div class="p-3 p-md-4 bg-white rounded-4 border border-warning-subtle shadow-sm position-relative h-100 d-flex flex-column justify-content-between">
-                    <div>
-                        <div class="d-flex align-items-center justify-content-between mb-3 me-5">
-                            <span class="badge bg-warning text-dark position-absolute top-0 end-0 m-3 fw-bold shadow-sm" style="font-size:10px;">
-                                <i class="bi bi-pin-angle-fill me-1"></i> Pinned Announcement
-                            </span>
-                            
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold text-uppercase flex-shrink-0" style="width:36px; height:36px; font-size:14px;">
-                                    ${(post.userName || "A").charAt(0)}
-                                </div>
-                                <div style="min-width:0;">
-                                    <strong class="d-block text-dark text-truncate" style="font-size:14px;">
-                                        <a href="../profile/user-profile.html?uid=${encodeURIComponent(authorHandle)}" class="text-dark text-decoration-none">
-                                            ${post.userName || "Admin"}
-                                        </a>
-                                    </strong>
-                                    <small class="text-muted" style="font-size:11px;">${dateStr}</small>
-                                </div>
-                            </div>
-                        </div>
-
-                        <p class="text-dark small mb-3" style="line-height:1.5; cursor:pointer;" onclick="window.openPostModal('${post.id}')">
-                            ${post.description || ""}
-                        </p>
-                        
-                        ${mediaMarkup}
-                    </div>
-
-                    <div class="pt-3 border-top mt-auto">
-                        <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
-                            <div class="d-flex align-items-center gap-2">
-                                <button type="button" class="btn btn-sm ${isLiked ? 'btn-danger liked' : 'btn-outline-danger'} rounded-pill px-3 py-1 fw-bold" id="card-like-btn-${post.id}" onclick="window.likeImpactPost('${post.id}', this)" style="font-size:12px;">
-                                    <i class="bi ${isLiked ? 'bi-heart-fill' : 'bi-heart'} me-1"></i>
-                                    <span class="like-count">${post.likesCount || 0}</span>
-                                </button>
-                                
-                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold" onclick="window.openPostModal('${post.id}')" style="font-size:12px;">
-                                    <i class="bi bi-chat-dots-fill me-1"></i> <span id="card-comment-count-${post.id}">${post.commentsCount || 0}</span>
-                                </button>
-
-                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2 py-1 fw-bold" onclick="window.sharePost('${post.id}')" style="font-size:12px;" title="Share Post">
-                                    <i class="bi bi-share-fill"></i>
-                                </button>
-                            </div>
-
-                            <a href="../community/community.html#postcard-${post.id}" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1 fw-bold text-nowrap" style="font-size:11px;">
-                                View in Feed →
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }));
-
-    container.innerHTML = cardsHTML.join("");
-}
-
-// ── Global Interactive Handlers for Pinned Posts Modal & Actions ──
-window.openPostModal = async function(postId) {
-    const modalEl = document.getElementById("postDetailModal");
-    if (!modalEl) return;
-
-    let modal = window.bootstrap ? (bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl)) : null;
-    const body = document.getElementById("postDetailBody");
-    if (body) {
-        body.innerHTML = `
-            <div class="text-center p-4">
-                <div class="spinner-border spinner-border-sm text-success" role="status"></div>
-                <small class="d-block text-muted mt-2">Loading post...</small>
-            </div>
-        `;
-    }
-    if (modal) modal.show();
-
-    try {
-        const snap = await get(child(ref(db), `community/posts/${postId}`));
-        if (!snap.exists()) {
-            if (body) body.innerHTML = '<p class="text-center text-muted p-4">Post not found.</p>';
-            return;
-        }
-
-        const post = snap.val();
-        const activeUserId = getActiveUserId();
-        const dateStr = post.createdAt ? new Date(post.createdAt).toLocaleString() : "Recent";
-        const isVid = post.isVideo || (post.imageUrl && (post.imageUrl.includes(".mp4") || post.imageUrl.includes(".webm")));
-
-        let isLiked = false;
-        if (activeUserId) {
-            try {
-                const lSnap = await get(child(ref(db), `community/likes/${postId}/${activeUserId}`));
-                isLiked = lSnap.exists();
-            } catch (e) { /* ignore */ }
-        }
-
-        const mediaHTML = post.imageUrl ? (isVid ? `
-            <video src="${post.imageUrl}" controls class="w-100 rounded-3 mb-3 bg-black" style="max-height:400px; object-fit:contain;"></video>
-        ` : `
-            <img src="${post.imageUrl}" class="w-100 rounded-3 mb-3" style="max-height:400px; object-fit:cover;" alt="Post image">
-        `) : "";
-
-        if (body) {
-            body.innerHTML = `
-                <div class="d-flex align-items-center gap-2 mb-3">
-                    <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold text-uppercase flex-shrink-0" style="width:40px; height:40px; font-size:16px;">
-                        ${(post.userName || "A").charAt(0)}
-                    </div>
-                    <div>
-                        <strong class="d-block text-dark" style="font-size:15px;">${post.userName || "Admin"}</strong>
-                        <small class="text-muted" style="font-size:12px;"><i class="bi bi-clock me-1"></i>${dateStr}</small>
-                    </div>
-                </div>
-
-                <p class="text-dark mb-3" style="font-size:14px; line-height:1.6;">${post.description || ""}</p>
-
-                ${mediaHTML}
-
-                <div class="d-flex align-items-center justify-content-between border-top border-bottom py-2 my-3">
-                    <button type="button" class="btn btn-sm ${isLiked ? 'btn-danger liked' : 'btn-outline-danger'} rounded-pill px-3 py-1 fw-bold" id="modal-like-btn-${postId}" onclick="window.likeImpactPost('${postId}', this)">
-                        <i class="bi ${isLiked ? 'bi-heart-fill' : 'bi-heart'} me-1"></i>
-                        <span class="like-count">${post.likesCount || 0}</span> Likes
-                    </button>
-
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 fw-bold" onclick="window.sharePost('${postId}')">
-                        <i class="bi bi-share-fill me-1"></i> Share
-                    </button>
-                </div>
-
-                <div class="modal-comments-box mt-3">
-                    <h6 class="fw-bold text-dark mb-2"><i class="bi bi-chat-dots-fill text-success me-1"></i> Comments (<span id="modal-comment-count-${postId}">${post.commentsCount || 0}</span>)</h6>
-                    <div class="comments-list mt-2 p-2 rounded-3 border bg-light" id="modal-comments-list-${postId}" style="max-height:220px; overflow-y:auto;">
-                        <div class="text-center p-3"><div class="spinner-border spinner-border-sm text-success"></div></div>
-                    </div>
-
-                    <form class="d-flex gap-2 mt-3" onsubmit="window.addImpactComment('${postId}', event)">
-                        <input type="text" class="form-control form-control-sm rounded-pill px-3" placeholder="${activeUserId ? 'Write a comment...' : 'Log in to write a comment...'}" id="modal-comment-input-${postId}" autocomplete="off" required>
-                        <button type="submit" class="btn btn-sm btn-success rounded-pill px-3"><i class="bi bi-send-fill"></i></button>
-                    </form>
-                </div>
-            `;
-        }
-
-        loadImpactComments(postId);
-    } catch (e) {
-        console.error("Open post modal error:", e);
-        if (body) body.innerHTML = '<p class="text-center text-muted p-4">Failed to load post details.</p>';
-    }
-};
-
-window.likeImpactPost = async function(postId, btn) {
-    const activeUserId = getActiveUserId();
-    const isSubfolder = window.location.pathname.includes("/impact/") || window.location.pathname.includes("/profile/") || window.location.pathname.includes("/community/") || window.location.pathname.includes("/activities/") || window.location.pathname.includes("/notifications/");
-    const loginUrl = isSubfolder ? "../logins/login.html" : "logins/login.html";
-
-    if (!activeUserId) {
-        alert("Please log in to like posts.");
-        window.location.href = loginUrl;
-        return;
-    }
-
-    const cardLikeBtn = document.getElementById(`card-like-btn-${postId}`);
-    const modalLikeBtn = document.getElementById(`modal-like-btn-${postId}`);
-    const refBtn = btn || cardLikeBtn || modalLikeBtn;
-
-    const isCurrentlyLiked = refBtn ? (refBtn.classList.contains("btn-danger") || refBtn.classList.contains("liked")) : false;
-    const willBeLiked = !isCurrentlyLiked;
-
-    const countSpan = refBtn ? refBtn.querySelector(".like-count") : null;
-    let currentCount = parseInt(countSpan ? countSpan.textContent : "0") || 0;
-    const newCount = willBeLiked ? currentCount + 1 : Math.max(0, currentCount - 1);
-
-    // Apply UI update IMMEDIATELY to both card button and modal button
-    [cardLikeBtn, modalLikeBtn].forEach(b => {
-        if (b) {
-            b.className = willBeLiked 
-                ? "btn btn-sm btn-danger rounded-pill px-3 py-1 fw-bold liked" 
-                : "btn btn-sm btn-outline-danger rounded-pill px-3 py-1 fw-bold";
-            const icon = b.querySelector("i");
-            if (icon) icon.className = willBeLiked ? "bi bi-heart-fill me-1" : "bi bi-heart me-1";
-            const cntSpan = b.querySelector(".like-count");
-            if (cntSpan) cntSpan.textContent = newCount;
-        }
-    });
-
-    try {
-        const likeRef = ref(db, `community/likes/${postId}/${activeUserId}`);
-        const postRef = ref(db, `community/posts/${postId}`);
-        if (willBeLiked) {
-            await set(likeRef, true);
-        } else {
-            await remove(likeRef);
-        }
-        await update(postRef, { likesCount: newCount });
-    } catch (e) {
-        console.error("Like post error:", e);
-    }
-};
-
-async function loadImpactComments(postId) {
-    const container = document.getElementById(`modal-comments-list-${postId}`);
-    if (!container) return;
-
-    try {
-        const cSnap = await get(child(ref(db), `community/comments/${postId}`));
-        if (!cSnap.exists()) {
-            container.innerHTML = '<p class="text-center text-muted small p-2 m-0">No comments yet. Be the first to comment!</p>';
-            return;
-        }
-
-        const comments = [];
-        cSnap.forEach(c => comments.push({ id: c.key, ...c.val() }));
-        comments.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-
-        const activeUserId = getActiveUserId();
-        const postSnap = await get(child(ref(db), `community/posts/${postId}`));
-        const postOwnerId = postSnap.exists() ? postSnap.val().userId : null;
-
-        container.innerHTML = comments.map(c => {
-            const canDelete = activeUserId && (activeUserId === c.userId || activeUserId === postOwnerId);
-            return `
-            <div class="p-2 mb-2 bg-white rounded-3 border position-relative" id="impact-comment-${c.id}">
-                <div class="d-flex align-items-center justify-content-between mb-1 ${canDelete ? 'pe-4' : ''}">
-                    <strong class="text-dark small">${c.userName || "User"}</strong>
-                    <small class="text-muted" style="font-size:10px;">${c.createdAt ? new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}</small>
-                </div>
-                <p class="text-secondary small m-0" style="font-size:12px; line-height:1.4;">${c.text || ""}</p>
-                ${canDelete ? `
-                <button type="button" class="btn btn-sm text-danger p-0 position-absolute" style="top:6px; right:8px; line-height:1; font-size:13px; background:none; border:none; cursor:pointer;" onclick="window.deleteImpactComment('${postId}', '${c.id}')" title="Delete comment">
-                    <i class="bi bi-trash3"></i>
-                </button>` : ""}
-            </div>
-            `;
-        }).join("");
-    } catch (e) {
-        container.innerHTML = '<p class="text-center text-muted small p-2 m-0">Failed to load comments.</p>';
-    }
-}
-
-window.deleteImpactComment = async function(postId, commentId) {
-    if (!confirm("Are you sure you want to delete this comment?")) return;
-
-    try {
-        document.getElementById(`impact-comment-${commentId}`)?.remove();
-        await remove(ref(db, `community/comments/${postId}/${commentId}`));
-
-        const pSnap = await get(child(ref(db), `community/posts/${postId}`));
-        if (pSnap.exists()) {
-            const newCount = Math.max(0, (pSnap.val().commentsCount || 0) - 1);
-            await update(ref(db, `community/posts/${postId}`), { commentsCount: newCount });
-
-            const modalCount = document.getElementById(`modal-comment-count-${postId}`);
-            if (modalCount) modalCount.textContent = newCount;
-            const cardCount = document.getElementById(`card-comment-count-${postId}`);
-            if (cardCount) cardCount.textContent = newCount;
-        }
-    } catch (e) {
-        console.error("Delete impact comment error:", e);
-        alert("Failed to delete comment: " + e.message);
-    }
-};
-
-window.addImpactComment = async function(postId, event) {
-    if (event) event.preventDefault();
-    const activeUserId = getActiveUserId();
-    const isSubfolder = window.location.pathname.includes("/impact/") || window.location.pathname.includes("/profile/") || window.location.pathname.includes("/community/") || window.location.pathname.includes("/activities/") || window.location.pathname.includes("/notifications/");
-    const loginUrl = isSubfolder ? "../logins/login.html" : "logins/login.html";
-
-    if (!activeUserId) {
-        alert("Please log in to submit comments.");
-        window.location.href = loginUrl;
-        return;
-    }
-
-    const input = document.getElementById(`modal-comment-input-${postId}`);
-    if (!input) return;
-    const text = input.value.trim();
-    if (!text) return;
-
-    try {
-        const uSnap = await get(child(ref(db), `users/${activeUserId}`));
-        const user = uSnap.exists() ? uSnap.val() : {};
-        const myName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || "User";
-
-        const newCommentRef = push(ref(db, `community/comments/${postId}`));
-        const commentData = {
-            userId: activeUserId,
-            userName: myName,
-            text: text,
-            createdAt: Date.now()
-        };
-
-        input.value = "";
-        const list = document.getElementById(`modal-comments-list-${postId}`);
-        if (list) {
-            const emptyMsg = list.querySelector("p");
-            if (emptyMsg) emptyMsg.remove();
-
-            list.insertAdjacentHTML("beforeend", `
-                <div class="p-2 mb-2 bg-white rounded-3 border position-relative" id="impact-comment-${newCommentRef.key}">
-                    <div class="d-flex align-items-center justify-content-between mb-1 pe-4">
-                        <strong class="text-dark small">${myName}</strong>
-                        <small class="text-muted" style="font-size:10px;">Just now</small>
-                    </div>
-                    <p class="text-secondary small m-0" style="font-size:12px; line-height:1.4;">${text}</p>
-                    <button type="button" class="btn btn-sm text-danger p-0 position-absolute" style="top:6px; right:8px; line-height:1; font-size:13px; background:none; border:none; cursor:pointer;" onclick="window.deleteImpactComment('${postId}', '${newCommentRef.key}')" title="Delete comment">
-                        <i class="bi bi-trash3"></i>
-                    </button>
-                </div>
-            `);
-            list.scrollTop = list.scrollHeight;
-        }
-
-        await set(newCommentRef, commentData);
-
-        const pSnap = await get(child(ref(db), `community/posts/${postId}`));
-        if (pSnap.exists()) {
-            const newCount = (pSnap.val().commentsCount || 0) + 1;
-            await update(ref(db, `community/posts/${postId}`), { commentsCount: newCount });
-
-            const modalCount = document.getElementById(`modal-comment-count-${postId}`);
-            if (modalCount) modalCount.textContent = newCount;
-            const cardCount = document.getElementById(`card-comment-count-${postId}`);
-            if (cardCount) cardCount.textContent = newCount;
-        }
-    } catch (e) {
-        console.error("Add comment error:", e);
-    }
-};
-
-window.sharePost = async function(postId) {
-    const shareUrl = window.location.origin + `/community/community.html#postcard-${postId}`;
-    if (navigator.share) {
-        try {
-            await navigator.share({
-                title: "URVI Community Post",
-                text: "Check out this pinned announcement on URVI 🌿",
-                url: shareUrl
-            });
-            return;
-        } catch (e) { /* fallback to copy */ }
-    }
-    try {
-        await navigator.clipboard.writeText(shareUrl);
-        alert("Post link copied to clipboard! 📋");
-    } catch (e) {
-        alert("Share link: " + shareUrl);
-    }
-};
