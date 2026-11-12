@@ -479,7 +479,7 @@ function setupProofUploadModal() {
         if (isVid) {
             previewBox.innerHTML = `<video src="${url}" controls class="w-100 rounded-3" style="max-height:220px; background:#0F172A;"></video>`;
         } else {
-            previewBox.innerHTML = `<img src="${url}" class="w-100 rounded-3" style="max-height:220px; object-fit:cover;" alt="Proof Preview">`;
+            previewBox.innerHTML = `<img src="${url}" class="w-100 rounded-3" style="max-height:300px; height:auto; object-fit:contain; background:#0b0f19;" alt="Proof Preview">`;
         }
     }
 

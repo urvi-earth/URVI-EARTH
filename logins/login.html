@@ -213,6 +213,20 @@
             return null;
         }
 
+        // Helper: Determine landing page post-auth (Community for mobile, Dashboard for desktop)
+        function getPostAuthRedirectUrl() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const redirectParam = params.get('redirect') || params.get('returnUrl');
+                if (redirectParam) return redirectParam;
+                const isMobile = (window.matchMedia && window.matchMedia("(max-width: 991.98px)").matches) || 
+                    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                return isMobile ? '../community/community.html' : '../index.html';
+            } catch (e) {
+                return '../index.html';
+            }
+        }
+
         // Email & Password Auth Login
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -228,7 +242,7 @@
                 if (identifier.toLowerCase() === "urvi.earth" || identifier.toLowerCase() === "urvi.earth@urvi.org") {
                     if (password === "urvi0000") {
                         localStorage.setItem('urvi_logged_user', 'urvi.earth');
-                        window.location.href = '../index.html';
+                        window.location.href = getPostAuthRedirectUrl();
                         return;
                     }
                 }
@@ -266,7 +280,7 @@
                     localStorage.setItem('urvi_logged_user', activeUserId);
 
                     setTimeout(() => {
-                        window.location.href = '../index.html';
+                        window.location.href = getPostAuthRedirectUrl();
                     }, 400);
 
                 } catch (authErr) {
@@ -274,7 +288,7 @@
                     if (userRecord && userRecord.password === password) {
                         const activeUserId = userRecord.key || userRecord.user_id;
                         localStorage.setItem('urvi_logged_user', activeUserId);
-                        window.location.href = '../index.html';
+                        window.location.href = getPostAuthRedirectUrl();
                         return;
                     }
 
@@ -312,7 +326,7 @@
 
                 if (existingUser && existingUser.mobile && existingUser.dob && existingUser.user_id) {
                     localStorage.setItem('urvi_logged_user', existingUser.key || existingUser.user_id);
-                    window.location.href = '../index.html';
+                    window.location.href = getPostAuthRedirectUrl();
                 } else {
                     // Pre-fill suggested User ID from email prefix
                     const suggestedUser = gUser.email.split("@")[0].toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -389,7 +403,7 @@
 
                 await set(ref(db, `users/${username}`), newUser);
                 localStorage.setItem('urvi_logged_user', username);
-                window.location.href = '../index.html';
+                window.location.href = getPostAuthRedirectUrl();
 
             } catch (err) {
                 console.error(err);

@@ -554,6 +554,20 @@
             }, 1000);
         }
 
+        // Helper: Determine landing page post-auth (Community for mobile, Dashboard for desktop)
+        function getPostAuthRedirectUrl() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const redirectParam = params.get('redirect') || params.get('returnUrl');
+                if (redirectParam) return redirectParam;
+                const isMobile = (window.matchMedia && window.matchMedia("(max-width: 991.98px)").matches) || 
+                    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                return isMobile ? '../community/community.html' : '../index.html';
+            } catch (e) {
+                return '../index.html';
+            }
+        }
+
         // 5-Second Custom Dynamic Loading Sequence
         function triggerSuccessAnimation() {
             const overlay = document.getElementById('success-overlay');
@@ -577,7 +591,7 @@
             }, 3500);
 
             setTimeout(() => {
-                window.location.href = '../index.html';
+                window.location.href = getPostAuthRedirectUrl();
             }, 5000);
         }
 
