@@ -199,12 +199,12 @@
                     <!-- Hidden File Input (Accepts Images and Videos!) -->
                     <input type="file" id="postImage" accept="image/*,video/*" hidden>
 
-                    <!-- Preview Containers -->
-                    <div class="text-center">
-                        <img id="previewImage" src=""
-                            style="display:none;width:100%;max-height:350px;object-fit:cover;border-radius:16px;margin-top:15px;">
+                    <!-- Preview Containers (Uncropped, Dynamic Height, Neutral Background) -->
+                    <div class="text-center post-preview-wrapper">
+                        <img id="previewImage" src="" class="post-preview-image"
+                            style="display:none;width:100%;height:auto;max-height:480px;object-fit:contain;border-radius:16px;margin-top:15px;background:#0b0f19;">
                         <video id="previewVideo" controls
-                            style="display:none;width:100%;max-height:350px;border-radius:16px;margin-top:15px;background:#000;"></video>
+                            style="display:none;width:100%;height:auto;max-height:480px;border-radius:16px;margin-top:15px;background:#000;"></video>
                     </div>
 
                     <!-- Upload Progress -->

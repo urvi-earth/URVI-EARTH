@@ -365,13 +365,25 @@ window.openPostDetail = async function (postId) {
         let mediaHTML = "";
         if (post.imageUrl) {
             if (isVideo) {
-                mediaHTML = `<video src="${post.imageUrl}" controls class="post-detail-img" style="background:#000;max-height:450px;width:100%;"></video>`;
+                mediaHTML = `<video src="${post.imageUrl}" controls playsinline class="post-detail-img mb-3" style="background:#000;max-height:480px;width:100%;object-fit:contain;"></video>`;
             } else {
-                mediaHTML = `<img src="${post.imageUrl}" class="post-detail-img" alt="">`;
+                mediaHTML = `<img src="${post.imageUrl}" class="post-detail-img mb-3" alt="Post Image" style="width:100%;height:auto;max-height:480px;object-fit:contain;background:#0b0f19;border-radius:14px;display:block;">`;
             }
         }
 
+        const userAvatar = post.userPhoto && post.userPhoto !== 'default' && post.userPhoto.length > 5
+            ? post.userPhoto
+            : `https://ui-avatars.com/api/?name=${encodeURIComponent(post.userName || 'U')}&background=22C55E&color=fff`;
+
         body.innerHTML = `
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <img src="${userAvatar}" class="rounded-circle" style="width:42px;height:42px;object-fit:cover;" onerror="this.src='https://ui-avatars.com/api/?name=U&background=22C55E&color=fff'">
+                <div>
+                    <div class="fw-bold text-dark d-flex align-items-center gap-1">${post.userName || 'URVI Member'}</div>
+                    <small class="text-muted" style="font-size:11px;">${timeStr}</small>
+                </div>
+            </div>
+
             ${mediaHTML}
 
             <div class="post-detail-caption" style="font-weight:500; font-size:15px; margin: 12px 0;">${post.description || ""}</div>
@@ -393,17 +405,17 @@ window.openPostDetail = async function (postId) {
                 </button>
             </div>
 
-            <!-- COMMENTS SECTION -->
-            <div class="modal-comments-box mt-3">
+            <!-- COMMENTS SECTION (Vertically Scrollable With Full Post) -->
+            <div class="modal-comments-box mt-3 pb-2">
                 <h6><i class="bi bi-chat-dots-fill text-success me-1"></i> Comments (<span id="modal-comment-count-${postId}">${post.commentsCount || 0}</span>)</h6>
-                <div class="comments-list mt-2" id="modal-comments-list-${postId}" style="max-height:180px; overflow-y:auto;">
+                <div class="comments-list mt-2" id="modal-comments-list-${postId}">
                     <div class="text-center p-2"><div class="spinner-border spinner-border-sm text-success"></div></div>
                 </div>
 
                 ${currentUserId ? `
-                <form class="d-flex gap-2 mt-3" onsubmit="window.addModalComment('${postId}', event)">
-                    <input type="text" class="form-control form-control-sm rounded-pill px-3" placeholder="Write a comment..." id="modal-comment-input-${postId}" autocomplete="off">
-                    <button type="submit" class="btn btn-sm btn-success rounded-pill px-3"><i class="bi bi-send-fill"></i></button>
+                <form class="d-flex gap-2 mt-3" action="javascript:void(0);" method="post" onsubmit="event.preventDefault(); window.addModalComment('${postId}', event); return false;">
+                    <input type="text" class="form-control form-control-sm rounded-pill px-3" placeholder="Write a comment..." id="modal-comment-input-${postId}" autocomplete="off" onkeydown="if(event.key==='Enter'||event.keyCode===13){event.preventDefault();window.addModalComment('${postId}',event);}">
+                    <button type="button" class="btn btn-sm btn-success rounded-pill px-3" onclick="window.addModalComment('${postId}', event)" onpointerdown="event.preventDefault();" style="touch-action:manipulation;"><i class="bi bi-send-fill" style="pointer-events:none;"></i></button>
                 </form>` : ""}
             </div>
         `;
@@ -511,45 +523,86 @@ window.deleteModalComment = async function (postId, commentId) {
     }
 };
 
+const submittingUserProfileCommentPostIds = new Set();
+
 window.addModalComment = async function (postId, event) {
-    if (event) event.preventDefault();
+    if (event) {
+        try {
+            event.preventDefault();
+            event.stopPropagation();
+        } catch (err) {}
+    }
+
+    if (submittingUserProfileCommentPostIds.has(postId)) return;
 
     const input = document.getElementById(`modal-comment-input-${postId}`);
     if (!input) return;
     const text = input.value.trim();
-    if (!text) return;
+    if (!text) {
+        input.focus();
+        return;
+    }
 
-    const activeUser = localStorage.getItem("urvi_logged_user");
+    const activeUser = currentUserId || localStorage.getItem("urvi_logged_user");
     if (!activeUser) {
         alert("Please login first.");
         return;
     }
 
+    submittingUserProfileCommentPostIds.add(postId);
+    const form = input.closest("form");
+    const sendBtn = form ? form.querySelector("button") : null;
+    if (sendBtn) sendBtn.disabled = true;
+
     try {
-        const meSnap = await get(child(ref(db), `users/${activeUser}`));
-        const me = meSnap.exists() ? meSnap.val() : {};
-        const myName = `${me.firstName || ""} ${me.lastName || ""}`.trim() || "User";
+        let myName = "User";
+        let myPhoto = "default";
+        const cachedUserData = localStorage.getItem("urvi_user_data");
+        if (cachedUserData) {
+            try {
+                const u = JSON.parse(cachedUserData);
+                myName = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.name || activeUser;
+                myPhoto = u.profilePic || "default";
+            } catch (err) {}
+        }
+
+        try {
+            const meSnap = await get(child(ref(db), `users/${activeUser}`));
+            if (meSnap.exists()) {
+                const me = meSnap.val();
+                myName = `${me.firstName || ""} ${me.lastName || ""}`.trim() || myName;
+                myPhoto = me.profilePic || myPhoto;
+            }
+        } catch (err) {}
 
         const commentRef = push(ref(db, `community/comments/${postId}`));
         await set(commentRef, {
             userId: activeUser,
             userName: myName,
-            userPhoto: me.profilePic || "default",
+            userPhoto: myPhoto,
             text: text,
             createdAt: Date.now()
         });
 
         input.value = "";
+        try { input.blur(); } catch (err) {}
         await loadModalComments(postId);
 
-        const postSnap = await get(ref(db, `community/posts/${postId}`));
-        if (postSnap.exists()) {
-            const count = (postSnap.val().commentsCount || 0) + 1;
-            await update(ref(db, `community/posts/${postId}`), { commentsCount: count });
-            const countSpan = document.getElementById(`modal-comment-count-${postId}`);
-            if (countSpan) countSpan.textContent = count;
-        }
-    } catch (e) { console.error("Add modal comment error:", e); }
+        try {
+            const postSnap = await get(ref(db, `community/posts/${postId}`));
+            if (postSnap.exists()) {
+                const count = (postSnap.val().commentsCount || 0) + 1;
+                await update(ref(db, `community/posts/${postId}`), { commentsCount: count });
+                const countSpan = document.getElementById(`modal-comment-count-${postId}`);
+                if (countSpan) countSpan.textContent = count;
+            }
+        } catch (err) {}
+    } catch (e) {
+        console.error("Add modal comment error:", e);
+    } finally {
+        submittingUserProfileCommentPostIds.delete(postId);
+        if (sendBtn) sendBtn.disabled = false;
+    }
 };
 
 window.shareModalPost = async function (postId) {

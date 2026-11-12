@@ -790,9 +790,9 @@ function createPostCardHTML(post) {
             <div class="comments-section" id="comments-${post.postId}" style="display:none;">
                 <div class="comments-list" id="comments-list-${post.postId}"></div>
                 ${currentUserId ? `
-                <form class="comment-input-row" onsubmit="addComment('${post.postId}', event)">
-                    <input type="text" placeholder="Write a comment..." id="comment-input-${post.postId}" maxlength="300" autocomplete="off">
-                    <button type="submit"><i class="bi bi-send-fill"></i></button>
+                <form class="comment-input-row" action="javascript:void(0);" method="post" onsubmit="event.preventDefault(); window.addComment('${post.postId}', event); return false;">
+                    <input type="text" placeholder="Write a comment..." id="comment-input-${post.postId}" maxlength="500" autocomplete="off" aria-label="Write a comment" onkeydown="if(event.key==='Enter'||event.keyCode===13){event.preventDefault();window.addComment('${post.postId}',event);}">
+                    <button type="button" id="comment-send-btn-${post.postId}" onclick="window.addComment('${post.postId}', event)" onpointerdown="event.preventDefault();" aria-label="Send comment" title="Send comment"><i class="bi bi-send-fill" style="pointer-events:none;"></i></button>
                 </form>` : `
                 <div class="p-2 text-center my-2 rounded-3 border bg-light" style="cursor:pointer;" onclick="window.location.href='../logins/login.html'">
                     <small class="text-muted fw-semibold"><i class="bi bi-box-arrow-in-right text-success me-1"></i> Log in to react or join the conversation</small>
@@ -823,6 +823,61 @@ async function bindPostCardEvents(postId, post) {
     const followBtn = card.querySelector(".follow-btn-sm");
     if (followBtn && currentUserId) {
         setupFollowBtnSm(followBtn, post.userId);
+    }
+
+    // Explicit touch, click and Enter key bindings for mobile comment submission
+    const sendBtn = document.getElementById(`comment-send-btn-${postId}`);
+    const commentInput = document.getElementById(`comment-input-${postId}`);
+    const commentForm = card.querySelector(".comment-input-row");
+
+    if (sendBtn) {
+        // Prevent input blur / keyboard collapse during mobile touch interaction
+        const preventBlur = (e) => {
+            e.preventDefault();
+        };
+        sendBtn.addEventListener("pointerdown", preventBlur, { passive: false });
+        sendBtn.addEventListener("touchstart", preventBlur, { passive: false });
+        sendBtn.addEventListener("mousedown", preventBlur);
+
+        // Click handler (also triggered after touch)
+        sendBtn.addEventListener("click", (e) => {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            window.addComment(postId, e);
+        });
+    }
+
+    if (commentInput) {
+        commentInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.keyCode === 13) {
+                e.preventDefault();
+                e.stopPropagation();
+                window.addComment(postId, e);
+            }
+        });
+
+        commentInput.addEventListener("focus", () => {
+            document.body.classList.add("comment-typing");
+        });
+
+        commentInput.addEventListener("blur", () => {
+            setTimeout(() => {
+                if (!document.activeElement || !document.activeElement.id || !document.activeElement.id.startsWith("comment-input-")) {
+                    document.body.classList.remove("comment-typing");
+                }
+            }, 150);
+        });
+    }
+
+    if (commentForm) {
+        commentForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            window.addComment(postId, e);
+            return false;
+        });
     }
 }
 
@@ -946,6 +1001,16 @@ window.toggleComments = async function (postId) {
     }
 };
 
+function escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 async function loadComments(postId) {
     const list = document.getElementById(`comments-list-${postId}`);
     if (!list) return;
@@ -960,94 +1025,197 @@ async function loadComments(postId) {
 
         const comments = [];
         snap.forEach(c => comments.push({ id: c.key, ...c.val() }));
-        comments.sort((a, b) => a.createdAt - b.createdAt);
+        comments.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
 
-        const activeUser = localStorage.getItem("urvi_logged_user");
         const postSnap = await get(ref(db, `community/posts/${postId}`));
         const postOwnerId = postSnap.exists() ? postSnap.val().userId : null;
 
         list.innerHTML = comments.map(c => {
-            const canDelete = activeUser && (activeUser === c.userId || activeUser === postOwnerId);
+            const canDelete = currentUserId && (currentUserId === c.userId || currentUserId === postOwnerId);
             return `
                 <div class="comment-item" id="comment-item-${c.id}">
                     <div class="comment-header">
-                        <strong style="cursor:pointer;" onclick="navigateToUserProfile('${c.userId}')">${c.userName || "User"}</strong>
-                        <small>${timeAgo(c.createdAt)}</small>
+                        <strong style="cursor:pointer;" onclick="navigateToUserProfile('${c.userId}')">${escapeHtml(c.userName || "User")}</strong>
+                        <small>${timeAgo(c.createdAt || Date.now())}</small>
                     </div>
-                    <p class="comment-text">${c.text}</p>
+                    <p class="comment-text">${escapeHtml(c.text)}</p>
                     ${canDelete ? `<button type="button" class="comment-delete-btn" onclick="deleteComment('${postId}', '${c.id}')" title="Delete comment"><i class="bi bi-trash3"></i></button>` : ""}
                 </div>
             `;
         }).join("");
     } catch (e) {
+        console.error("Load comments error:", e);
         list.innerHTML = '<p class="text-muted text-center" style="font-size:13px;">Failed to load comments</p>';
     }
 }
 
+const submittingCommentPostIds = new Set();
+
 window.addComment = async function (postId, event) {
-    if (event) event.preventDefault();
+    if (event) {
+        try {
+            event.preventDefault();
+            event.stopPropagation();
+        } catch (err) {}
+    }
+
+    if (submittingCommentPostIds.has(postId)) {
+        return; // Prevent duplicate submissions on rapid click/touch
+    }
 
     const input = document.getElementById(`comment-input-${postId}`);
     if (!input) return;
     const text = input.value.trim();
-    if (!text) return;
+    if (!text) {
+        input.focus();
+        return;
+    }
 
-    if (!currentUserId) {
+    // Dynamic resolution of active logged-in user (preserves auth across reloads/sessions)
+    const activeUserId = currentUserId || (() => {
+        const raw = localStorage.getItem("urvi_logged_user");
+        return (raw && raw !== "undefined" && raw !== "null" && raw.trim() !== "") ? raw.trim() : null;
+    })();
+
+    if (!activeUserId) {
         alert("Please log in to comment on posts!");
         window.location.href = "../logins/login.html";
         return;
     }
 
+    const sendBtn = document.getElementById(`comment-send-btn-${postId}`) || 
+                    (input.closest("form") ? input.closest("form").querySelector("button") : null);
+
+    if (sendBtn && sendBtn.disabled) return; // Prevent duplicate submission
+
+    submittingCommentPostIds.add(postId);
+
+    // Disable send button while submitting and show spinner
+    if (sendBtn) {
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="width:14px;height:14px;border-width:2px;pointer-events:none;"></span>';
+    }
+
     try {
-        const userSnap = await get(child(ref(db), `users/${currentUserId}`));
-        const me = userSnap.exists() ? userSnap.val() : {};
-        const myName = `${me.firstName || ""} ${me.lastName || ""}`.trim() || "User";
+        // Fast instant profile resolution from localStorage with RTDB fallback
+        let myName = "User";
+        let myPhoto = "default";
+        const cachedUserData = localStorage.getItem("urvi_user_data");
+        if (cachedUserData) {
+            try {
+                const u = JSON.parse(cachedUserData);
+                myName = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.name || u.userName || activeUserId;
+                myPhoto = u.profilePic || u.userPhoto || "default";
+            } catch (err) {}
+        }
+
+        try {
+            const userSnap = await get(child(ref(db), `users/${activeUserId}`));
+            if (userSnap.exists()) {
+                const me = userSnap.val();
+                myName = `${me.firstName || ""} ${me.lastName || ""}`.trim() || me.name || me.userName || myName;
+                myPhoto = me.profilePic || me.userPhoto || myPhoto;
+            }
+        } catch (uErr) {
+            console.warn("Could not fetch fresh user profile, using cached:", uErr);
+        }
 
         const commentRef = push(ref(db, `community/comments/${postId}`));
         const newCommentData = {
-            userId: activeUser,
+            userId: activeUserId,
             userName: myName,
-            userPhoto: me.profilePic || "default",
+            userPhoto: myPhoto,
             text: text,
             createdAt: Date.now()
         };
 
-        input.value = "";
+        // Save comment to Firebase Realtime Database
+        await set(commentRef, newCommentData);
 
+        // Clear input field on success and dismiss virtual keyboard cleanly
+        input.value = "";
+        try { input.blur(); } catch (err) {}
+        document.body.classList.remove("comment-typing");
+
+        // Ensure comments section is visible
+        const commentsSec = document.getElementById(`comments-${postId}`);
+        if (commentsSec && (commentsSec.style.display === "none" || commentsSec.style.display === "")) {
+            commentsSec.style.display = "block";
+        }
+
+        // Immediately append to comments list without requiring page reload
         const list = document.getElementById(`comments-list-${postId}`);
         if (list) {
             const emptyMsg = list.querySelector("p");
-            if (emptyMsg) emptyMsg.remove();
+            if (emptyMsg && emptyMsg.textContent.includes("No comments")) {
+                emptyMsg.remove();
+            }
 
             const commentItemHtml = `
                 <div class="comment-item" id="comment-item-${commentRef.key}">
                     <div class="comment-header">
-                        <strong style="cursor:pointer;" onclick="navigateToUserProfile('${activeUser}')">${myName}</strong>
+                        <strong style="cursor:pointer;" onclick="navigateToUserProfile('${activeUserId}')">${escapeHtml(myName)}</strong>
                         <small>Just now</small>
                     </div>
-                    <p class="comment-text">${text}</p>
+                    <p class="comment-text">${escapeHtml(text)}</p>
                     <button type="button" class="comment-delete-btn" onclick="deleteComment('${postId}', '${commentRef.key}')" title="Delete comment"><i class="bi bi-trash3"></i></button>
                 </div>
             `;
             list.insertAdjacentHTML("beforeend", commentItemHtml);
+            list.scrollTop = list.scrollHeight;
         }
 
-        await set(commentRef, newCommentData);
+        // Update post comment counter in Firebase & post card UI (non-blocking)
+        try {
+            const postRef = ref(db, `community/posts/${postId}`);
+            const postSnap = await get(postRef);
+            let newCount = 1;
+            if (postSnap.exists()) {
+                const postVal = postSnap.val();
+                newCount = (postVal.commentsCount || 0) + 1;
+                await update(postRef, { commentsCount: newCount });
 
-        const postSnap = await get(ref(db, `community/posts/${postId}`));
-        if (postSnap.exists()) {
-            const newCount = (postSnap.val().commentsCount || 0) + 1;
-            await update(ref(db, `community/posts/${postId}`), { commentsCount: newCount });
+                // Send notification to post author if commenter is someone else
+                const authorId = postVal.userId;
+                if (authorId && authorId !== activeUserId) {
+                    try {
+                        const notifRef = push(ref(db, `notifications/${authorId}`));
+                        await set(notifRef, {
+                            type: "comment",
+                            fromUserId: activeUserId,
+                            fromUserName: myName,
+                            fromUserPhoto: myPhoto,
+                            postId: postId,
+                            message: `${myName} commented: "${text.length > 35 ? text.slice(0, 35) + '...' : text}"`,
+                            read: false,
+                            createdAt: Date.now()
+                        });
+                    } catch (notifErr) {
+                        console.warn("Notification send warning:", notifErr);
+                    }
+                }
+            }
 
             const card = document.getElementById(`postcard-${postId}`);
             if (card) {
                 const countSpan = card.querySelector(".comment-count");
                 if (countSpan) countSpan.textContent = newCount;
             }
+        } catch (counterErr) {
+            console.warn("Could not update comment counter:", counterErr);
         }
+
+        showToast("Comment posted!");
 
     } catch (e) {
         console.error("Add comment error:", e);
+        showToast("Failed to post comment. Please try again.");
+    } finally {
+        submittingCommentPostIds.delete(postId);
+        if (sendBtn) {
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = '<i class="bi bi-send-fill" style="pointer-events:none;"></i>';
+        }
     }
 };
 
@@ -1059,10 +1227,12 @@ window.deleteComment = async function (postId, commentId) {
 
         await remove(ref(db, `community/comments/${postId}/${commentId}`));
 
-        const postSnap = await get(ref(db, `community/posts/${postId}`));
+        const postRef = ref(db, `community/posts/${postId}`);
+        const postSnap = await get(postRef);
+        let newCount = 0;
         if (postSnap.exists()) {
-            const newCount = Math.max(0, (postSnap.val().commentsCount || 0) - 1);
-            await update(ref(db, `community/posts/${postId}`), { commentsCount: newCount });
+            newCount = Math.max(0, (postSnap.val().commentsCount || 0) - 1);
+            await update(postRef, { commentsCount: newCount });
 
             const card = document.getElementById(`postcard-${postId}`);
             if (card) {
@@ -1070,8 +1240,16 @@ window.deleteComment = async function (postId, commentId) {
                 if (countSpan) countSpan.textContent = newCount;
             }
         }
+
+        const list = document.getElementById(`comments-list-${postId}`);
+        if (list && list.querySelectorAll(".comment-item").length === 0) {
+            list.innerHTML = '<p class="text-muted text-center" style="font-size:13px;padding:8px;">No comments yet</p>';
+        }
+
+        showToast("Comment deleted.");
     } catch (e) {
         console.error("Delete comment error:", e);
+        showToast("Failed to delete comment.");
     }
 };
 
@@ -1283,7 +1461,7 @@ function setupCommStoryUploadHandlers() {
         if (isVid) {
             previewBox.innerHTML = `<video src="${url}" controls class="w-100 rounded-3" style="max-height:220px; background:#0F172A;"></video>`;
         } else {
-            previewBox.innerHTML = `<img src="${url}" class="w-100 rounded-3" style="max-height:220px; object-fit:cover;" alt="Story Preview">`;
+            previewBox.innerHTML = `<img src="${url}" class="w-100 rounded-3" style="max-height:300px; height:auto; object-fit:contain; background:#0b0f19;" alt="Story Preview">`;
         }
     }
 

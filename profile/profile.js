@@ -679,29 +679,56 @@ function showPostDetail(post) {
     const bodyEl = document.getElementById("postDetailBody");
     if (!modalEl || !bodyEl) return;
 
+    const postId = post.id || post.postId;
     const isVid = post.videoUrl || (post.imageUrl && (post.imageUrl.match(/\.(mp4|webm|mov)(\?|$)/i) || post.imageUrl.includes('/video/upload/')));
     const mediaUrl = post.videoUrl || post.imageUrl;
     const isOwner = (post.userId || post.user_id) === loggedInUserId;
     const dateStr = post.createdAt ? new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+    const userAvatar = post.userPhoto && post.userPhoto !== 'default' && post.userPhoto.length > 5
+        ? post.userPhoto
+        : `https://ui-avatars.com/api/?name=${encodeURIComponent(post.userName || 'U')}&background=22C55E&color=fff`;
+
+    const likesCount = typeof post.likesCount === 'number'
+        ? post.likesCount
+        : (post.likes ? (typeof post.likes === 'object' ? Object.keys(post.likes).length : post.likes) : 0);
+
+    const commentsCount = typeof post.commentsCount === 'number'
+        ? post.commentsCount
+        : (post.comments ? (typeof post.comments === 'object' ? Object.keys(post.comments).length : post.comments) : 0);
+
+    let mediaHTML = "";
+    if (mediaUrl) {
+        if (isVid) {
+            mediaHTML = `<video src="${mediaUrl}" controls playsinline autoplay class="post-detail-img mb-3" style="width:100%;max-height:480px;object-fit:contain;background:#000;border-radius:14px;display:block;"></video>`;
+        } else {
+            mediaHTML = `<img src="${mediaUrl}" alt="Post" class="post-detail-img mb-3" style="width:100%;height:auto;max-height:480px;object-fit:contain;background:#0b0f19;border-radius:14px;display:block;">`;
+        }
+    }
 
     bodyEl.innerHTML = `
         <div class="d-flex align-items-center gap-3 mb-3">
-            <img src="${post.userPhoto || 'https://ui-avatars.com/api/?name=U&background=22C55E&color=fff'}" class="rounded-circle" style="width:44px;height:44px;object-fit:cover;" onerror="this.src='https://ui-avatars.com/api/?name=U&background=22C55E&color=fff'">
+            <img src="${userAvatar}" class="rounded-circle" style="width:44px;height:44px;object-fit:cover;" onerror="this.src='https://ui-avatars.com/api/?name=U&background=22C55E&color=fff'">
             <div>
                 <div class="fw-bold text-dark">${post.userName || 'URVI Member'}</div>
                 <div class="text-muted small">${dateStr}</div>
             </div>
         </div>
-        ${mediaUrl ? (
-            isVid
-                ? `<video src="${mediaUrl}" controls playsinline autoplay style="width:100%;max-height:420px;border-radius:14px;background:#000;" class="mb-3"></video>`
-                : `<img src="${mediaUrl}" alt="Post" class="w-100 rounded-3 mb-3" style="max-height:450px;object-fit:cover;">`
-        ) : ''}
+
+        ${mediaHTML}
+
         ${post.description ? `<p class="mt-2 text-dark" style="font-size:14.5px;line-height:1.55;white-space:pre-line;">${post.description}</p>` : ''}
-        <div class="d-flex align-items-center justify-content-between pt-3 border-top mt-3">
-            <div class="d-flex gap-3 text-muted small">
-                <span><i class="bi bi-heart-fill text-danger me-1"></i> ${post.likes ? (typeof post.likes === 'object' ? Object.keys(post.likes).length : post.likes) : 0} Likes</span>
-                <span><i class="bi bi-chat-dots-fill text-success me-1"></i> ${post.comments ? (typeof post.comments === 'object' ? Object.keys(post.comments).length : post.comments) : 0} Comments</span>
+        ${post.location ? `<div class="location small text-muted mb-2"><i class="bi bi-geo-alt-fill text-danger me-1"></i>${post.location}</div>` : ''}
+
+        <!-- Interactive Buttons Row -->
+        <div class="d-flex align-items-center justify-content-between border-top border-bottom py-2 my-3">
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3" id="profile-modal-like-btn-${postId}" onclick="window.likeProfileModalPost('${postId}', this)">
+                    <i class="bi bi-heart me-1"></i>
+                    <span id="profile-modal-like-count-${postId}">${likesCount}</span> Likes
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3" onclick="window.shareProfileModalPost('${postId}')">
+                    <i class="bi bi-share-fill me-1"></i> Share
+                </button>
             </div>
             ${isOwner ? `
                 <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3" id="btn-delete-current-post">
@@ -709,13 +736,43 @@ function showPostDetail(post) {
                 </button>
             ` : ''}
         </div>
+
+        <!-- Comments Section (Vertically Scrollable With Full Post) -->
+        <div class="modal-comments-box mt-3 pb-2">
+            <h6><i class="bi bi-chat-dots-fill text-success me-1"></i> Comments (<span id="profile-modal-comment-count-${postId}">${commentsCount}</span>)</h6>
+            <div class="comments-list mt-2" id="profile-modal-comments-list-${postId}">
+                <div class="text-center p-2"><div class="spinner-border spinner-border-sm text-success"></div></div>
+            </div>
+
+            ${loggedInUserId ? `
+            <form class="d-flex gap-2 mt-3" action="javascript:void(0);" method="post" onsubmit="event.preventDefault(); window.addProfileModalComment('${postId}', event); return false;">
+                <input type="text" class="form-control form-control-sm rounded-pill px-3" placeholder="Write a comment..." id="profile-modal-comment-input-${postId}" autocomplete="off" onkeydown="if(event.key==='Enter'||event.keyCode===13){event.preventDefault();window.addProfileModalComment('${postId}',event);}">
+                <button type="button" class="btn btn-sm btn-success rounded-pill px-3" onclick="window.addProfileModalComment('${postId}', event)" onpointerdown="event.preventDefault();" style="touch-action:manipulation;"><i class="bi bi-send-fill" style="pointer-events:none;"></i></button>
+            </form>` : `
+            <div class="p-2 text-center my-2 rounded-3 border bg-light" style="cursor:pointer;" onclick="window.location.href='../logins/login.html'">
+                <small class="text-muted fw-semibold"><i class="bi bi-box-arrow-in-right text-success me-1"></i> Log in to react or comment</small>
+            </div>`}
+        </div>
     `;
+
+    // Check if user already liked
+    if (loggedInUserId) {
+        get(ref(db, `community/likes/${postId}/${loggedInUserId}`)).then(snap => {
+            if (snap.exists()) {
+                const btn = document.getElementById(`profile-modal-like-btn-${postId}`);
+                if (btn) {
+                    btn.className = "btn btn-sm btn-danger rounded-pill px-3";
+                    btn.querySelector("i").className = "bi bi-heart-fill me-1";
+                }
+            }
+        }).catch(() => {});
+    }
 
     if (isOwner) {
         document.getElementById("btn-delete-current-post")?.addEventListener("click", async () => {
             if (!confirm("Are you sure you want to delete this post?")) return;
             try {
-                await remove(ref(db, `community/posts/${post.id}`));
+                await remove(ref(db, `community/posts/${postId}`));
                 const modalInstance = bootstrap.Modal.getInstance(modalEl);
                 if (modalInstance) modalInstance.hide();
                 loadMyPosts(loggedInUserId);
@@ -725,9 +782,209 @@ function showPostDetail(post) {
         });
     }
 
+    loadProfileModalComments(postId);
+
     const modal = new bootstrap.Modal(modalEl);
     modal.show();
 }
+
+async function loadProfileModalComments(postId) {
+    const list = document.getElementById(`profile-modal-comments-list-${postId}`);
+    if (!list) return;
+
+    try {
+        const snap = await get(child(ref(db), `community/comments/${postId}`));
+        if (!snap.exists()) {
+            list.innerHTML = '<p class="text-muted text-center small p-2">No comments yet</p>';
+            return;
+        }
+
+        const comments = [];
+        snap.forEach(c => comments.push({ id: c.key, ...c.val() }));
+        comments.sort((a, b) => a.createdAt - b.createdAt);
+
+        const activeUser = loggedInUserId;
+        const postSnap = await get(ref(db, `community/posts/${postId}`));
+        const postOwnerId = postSnap.exists() ? postSnap.val().userId : null;
+
+        list.innerHTML = comments.map(c => {
+            const canDelete = activeUser && (activeUser === c.userId || activeUser === postOwnerId);
+            return `
+            <div class="comment-item position-relative" id="profile-my-comment-${c.id}">
+                <div class="comment-header ${canDelete ? 'pe-4' : ''}">
+                    <strong>${c.userName || "User"}</strong>
+                    <small>${new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small>
+                </div>
+                <p class="comment-text">${c.text}</p>
+                ${canDelete ? `
+                <button type="button" class="btn btn-sm text-danger p-0 position-absolute" style="top:8px; right:10px; line-height:1; font-size:13px; background:none; border:none; cursor:pointer;" onclick="window.deleteProfileModalComment('${postId}', '${c.id}')" title="Delete comment">
+                    <i class="bi bi-trash3"></i>
+                </button>` : ""}
+            </div>
+            `;
+        }).join("");
+    } catch (e) {
+        list.innerHTML = '<p class="text-muted text-center small">Failed to load comments</p>';
+    }
+}
+
+window.likeProfileModalPost = async function (postId, btn) {
+    if (!loggedInUserId) {
+        alert("Please login first.");
+        window.location.href = "../logins/login.html";
+        return;
+    }
+
+    const likeRef = ref(db, `community/likes/${postId}/${loggedInUserId}`);
+    const postRef = ref(db, `community/posts/${postId}`);
+    const countSpan = document.getElementById(`profile-modal-like-count-${postId}`);
+    let currentCount = parseInt(countSpan.textContent) || 0;
+    const isLiked = btn.classList.contains("btn-danger");
+
+    if (isLiked) {
+        btn.className = "btn btn-sm btn-outline-danger rounded-pill px-3";
+        btn.querySelector("i").className = "bi bi-heart me-1";
+        currentCount = Math.max(0, currentCount - 1);
+    } else {
+        btn.className = "btn btn-sm btn-danger rounded-pill px-3";
+        btn.querySelector("i").className = "bi bi-heart-fill me-1";
+        currentCount++;
+    }
+
+    countSpan.textContent = currentCount;
+
+    try {
+        if (isLiked) {
+            await remove(likeRef);
+        } else {
+            await set(likeRef, true);
+        }
+        await update(postRef, { likesCount: currentCount });
+    } catch (e) {
+        console.error("Like modal sync error:", e);
+    }
+};
+
+window.shareProfileModalPost = function (postId) {
+    const url = window.location.origin + `/profile/user-profile.html?uid=${loggedInUserId}`;
+    if (navigator.share) {
+        navigator.share({
+            title: "Check out this post on URVI!",
+            text: "Take a look at this environmental update on URVI:",
+            url: url
+        }).catch(() => {});
+    } else {
+        navigator.clipboard.writeText(url).then(() => {
+            alert("Post link copied to clipboard!");
+        }).catch(() => {
+            prompt("Copy post link:", url);
+        });
+    }
+};
+
+window.deleteProfileModalComment = async function (postId, commentId) {
+    if (!confirm("Are you sure you want to delete this comment?")) return;
+    try {
+        document.getElementById(`profile-my-comment-${commentId}`)?.remove();
+        await remove(ref(db, `community/comments/${postId}/${commentId}`));
+
+        const postSnap = await get(ref(db, `community/posts/${postId}`));
+        if (postSnap.exists()) {
+            const count = Math.max(0, (postSnap.val().commentsCount || 0) - 1);
+            await update(ref(db, `community/posts/${postId}`), { commentsCount: count });
+            const countSpan = document.getElementById(`profile-modal-comment-count-${postId}`);
+            if (countSpan) countSpan.textContent = count;
+        }
+    } catch (e) {
+        console.error("Delete modal comment error:", e);
+        alert("Failed to delete comment: " + e.message);
+    }
+};
+
+const submittingProfileCommentPostIds = new Set();
+
+window.addProfileModalComment = async function (postId, event) {
+    if (event) {
+        try {
+            event.preventDefault();
+            event.stopPropagation();
+        } catch (err) {}
+    }
+
+    if (submittingProfileCommentPostIds.has(postId)) return;
+
+    const input = document.getElementById(`profile-modal-comment-input-${postId}`);
+    if (!input) return;
+    const text = input.value.trim();
+    if (!text) {
+        input.focus();
+        return;
+    }
+
+    const activeUser = loggedInUserId || localStorage.getItem("urvi_logged_user");
+    if (!activeUser) {
+        alert("Please login first.");
+        return;
+    }
+
+    submittingProfileCommentPostIds.add(postId);
+    const form = input.closest("form");
+    const sendBtn = form ? form.querySelector("button") : null;
+    if (sendBtn) {
+        sendBtn.disabled = true;
+    }
+
+    try {
+        let myName = "User";
+        let myPhoto = "default";
+        const cachedUserData = localStorage.getItem("urvi_user_data");
+        if (cachedUserData) {
+            try {
+                const u = JSON.parse(cachedUserData);
+                myName = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.name || activeUser;
+                myPhoto = u.profilePic || "default";
+            } catch (err) {}
+        }
+
+        try {
+            const meSnap = await get(child(ref(db), `users/${activeUser}`));
+            if (meSnap.exists()) {
+                const me = meSnap.val();
+                myName = `${me.firstName || ""} ${me.lastName || ""}`.trim() || myName;
+                myPhoto = me.profilePic || myPhoto;
+            }
+        } catch (err) {}
+
+        const commentRef = push(ref(db, `community/comments/${postId}`));
+        await set(commentRef, {
+            userId: activeUser,
+            userName: myName,
+            userPhoto: myPhoto,
+            text: text,
+            createdAt: Date.now()
+        });
+
+        input.value = "";
+        try { input.blur(); } catch (err) {}
+        await loadProfileModalComments(postId);
+
+        try {
+            const postSnap = await get(ref(db, `community/posts/${postId}`));
+            if (postSnap.exists()) {
+                const count = (postSnap.val().commentsCount || 0) + 1;
+                await update(ref(db, `community/posts/${postId}`), { commentsCount: count });
+                const countSpan = document.getElementById(`profile-modal-comment-count-${postId}`);
+                if (countSpan) countSpan.textContent = count;
+            }
+        } catch (err) {}
+    } catch (e) {
+        console.error("Add modal comment error:", e);
+        alert("Failed to post comment: " + e.message);
+    } finally {
+        submittingProfileCommentPostIds.delete(postId);
+        if (sendBtn) sendBtn.disabled = false;
+    }
+};
 
 async function loadUserChallengesAndProofs(targetId) {
     const challengesListEl = document.getElementById("profile-active-challenges-list");

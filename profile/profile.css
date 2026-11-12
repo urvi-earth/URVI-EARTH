@@ -648,18 +648,46 @@ textarea.form-control-plaintext {
 /* ══════════════════════════════
    POST DETAIL MODAL
 ══════════════════════════════ */
+.modal-backdrop.show {
+    z-index: 10040 !important;
+}
+
+#postDetailModal {
+    z-index: 10050 !important;
+}
+
 .post-detail-modal-content {
     border-radius: 24px;
     border: none;
-    overflow: hidden;
+    background: var(--bg-surface, #ffffff);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .post-detail-modal-content {
+    background: #0F172A;
+    color: #F8FAFC;
+}
+
+#postDetailBody {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    padding: 20px 24px;
 }
 
 .post-detail-img {
     width: 100%;
-    max-height: 400px;
-    object-fit: cover;
+    height: auto;
+    max-height: 500px;
+    object-fit: contain;
+    background: #0b0f19;
     border-radius: 14px;
     margin-bottom: 14px;
+    display: block;
+}
+
+[data-theme="dark"] .post-detail-img {
+    background: #020617;
 }
 
 .post-detail-caption {
@@ -686,6 +714,32 @@ textarea.form-control-plaintext {
     font-size: 13px;
     font-weight: 600;
     padding: 8px 18px;
+}
+
+.modal-comments-box form {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    box-sizing: border-box !important;
+}
+
+.modal-comments-box form input {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+}
+
+.modal-comments-box form button {
+    flex: 0 0 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    width: 40px !important;
+    height: 40px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
 }
 
 /* ══════════════════════════════
@@ -1020,6 +1074,75 @@ textarea.form-control-plaintext {
     .my-posts-grid {
         grid-template-columns: repeat(3, 1fr) !important;
         gap: 4px !important;
+    }
+
+    /* ── Mobile Post Detail Modal (Full Scroll, Native View, Clears Bottom Nav) ── */
+    #postDetailModal {
+        z-index: 10050 !important;
+        padding-right: 0 !important;
+    }
+
+    #postDetailModal .modal-dialog {
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 100% !important;
+        height: 100dvh !important;
+        max-height: 100dvh !important;
+        min-height: 100dvh !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    #postDetailModal .modal-content,
+    .post-detail-modal-content {
+        height: 100% !important;
+        height: 100dvh !important;
+        max-height: 100dvh !important;
+        border-radius: 0 !important;
+        border: none !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
+    }
+
+    #postDetailModal .modal-header {
+        flex-shrink: 0 !important;
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 20 !important;
+        background: var(--bg-surface, #ffffff) !important;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+        padding: 14px 18px !important;
+        padding-top: max(14px, env(safe-area-inset-top, 14px)) !important;
+    }
+
+    [data-theme="dark"] #postDetailModal .modal-header {
+        background: #0F172A !important;
+        border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    #postDetailModal .modal-body,
+    #postDetailBody {
+        flex: 1 1 auto !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        overscroll-behavior-y: contain !important;
+        padding: 16px 16px !important;
+        /* Ample padding at bottom so user can scroll completely past all comments and input */
+        padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    /* Remove nested fixed height containers on mobile so the whole post details view scrolls vertically */
+    #postDetailModal .modal-comments-box .comments-list,
+    #postDetailModal [id^="modal-comments-list-"],
+    #postDetailModal .comments-list {
+        max-height: none !important;
+        overflow-y: visible !important;
+    }
+
+    .post-detail-img {
+        max-height: 420px;
     }
 }
 
