@@ -2,7 +2,7 @@
    URVI – sw.js  |  Next-Gen PWA Service Worker & Offline Cache
    ===================================================== */
 
-const CACHE_NAME = 'urvi-pwa-v3';
+const CACHE_NAME = 'urvi-pwa-v6';
 
 // Core Application Shell Assets
 const PRECACHE_ASSETS = [

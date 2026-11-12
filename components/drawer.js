@@ -34,7 +34,8 @@ function initInstagramBottomNav() {
 
     const isHelp = false;
     const isActivities = path.includes("activities");
-    const isCommunity = path.includes("community") || (isRoot && window.innerWidth <= 768);
+    const isMobileNav = (window.matchMedia && window.matchMedia("(max-width: 991.98px)").matches) || window.innerWidth <= 991.98;
+    const isCommunity = path.includes("community") || (isRoot && isMobileNav);
     const isImpact = path.includes("impact");
     const isProfile = (path.includes("profile/profile.html") || path.endsWith("/profile.html")) && !path.includes("user-profile");
 
@@ -111,6 +112,15 @@ function initInstagramBottomNav() {
             else alert("Help & Support: Please reach out to support@urvi.earth");
         }
     });
+
+    // Community tab: Smooth scroll to top when already on Community page (prevents unnecessary reloads)
+    const communityTab = document.getElementById("insta-tab-home");
+    if (communityTab && path.includes("community")) {
+        communityTab.addEventListener("click", (e) => {
+            e.preventDefault();
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+    }
 
     // Inject Navigation & Action Sheet Styles
     injectInstagramNavStyles();
